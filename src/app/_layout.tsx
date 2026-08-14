@@ -1,15 +1,42 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { Stack } from 'expo-router/stack';
+import { ActivityIndicator, useColorScheme, View } from 'react-native';
 
-import AppTabs from '@/components/app-tabs';
+import { AuthProvider } from '@/features/administracao/auth-provider';
+import { useAuth } from '@/features/administracao/use-auth';
 
 import '@/global.css';
 
-export default function TabLayout() {
+function RootNavigator() {
+  const { status } = useAuth();
+
+  if (status === 'loading') {
+    return (
+      <View className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={status === 'authenticated'}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
+      <Stack.Protected guard={status === 'unauthenticated'}>
+        <Stack.Screen name="login" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AppTabs />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <RootNavigator />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
