@@ -1,98 +1,64 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { supabase } from '@/lib/supabase';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+type ConnectionStatus = 'checking' | 'connected' | 'error';
 
 export default function HomeScreen() {
+  const [status, setStatus] = useState<ConnectionStatus>('checking');
+  const [detail, setDetail] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    supabase.auth.getSession().then(({ error }) => {
+      if (cancelled) return;
+      if (error) {
+        setStatus('error');
+        setDetail(error.message);
+      } else {
+        setStatus('connected');
+        setDetail(process.env.EXPO_PUBLIC_SUPABASE_URL ?? '');
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <SafeAreaView className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
+      <View className="w-full max-w-sm items-center gap-3 px-6">
+        <Text className="text-3xl font-bold text-neutral-900 dark:text-white">SIPD</Text>
+        <Text className="text-center text-base text-neutral-500 dark:text-neutral-400">
+          Sistema Inteligente de Programação de Discursos
+        </Text>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        <View className="mt-6 w-full rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
+          <Text className="text-sm font-medium text-neutral-900 dark:text-white">
+            Conexão com o Supabase
+          </Text>
+          <Text
+            className={
+              status === 'connected'
+                ? 'mt-1 text-sm text-green-600 dark:text-green-400'
+                : status === 'error'
+                  ? 'mt-1 text-sm text-red-600 dark:text-red-400'
+                  : 'mt-1 text-sm text-neutral-500 dark:text-neutral-400'
+            }
+          >
+            {status === 'checking' && 'verificando…'}
+            {status === 'connected' && 'conectado'}
+            {status === 'error' && 'falhou'}
+          </Text>
+          {detail ? (
+            <Text className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">{detail}</Text>
+          ) : null}
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
