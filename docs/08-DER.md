@@ -2,7 +2,7 @@
 
 > Sistema Inteligente de Programação de Discursos (SIPD)
 
-**Versão:** 1.3
+**Versão:** 1.4
 
 ---
 
@@ -175,6 +175,7 @@ A autenticação será realizada pelo mecanismo de autenticação definido para 
 | nome | VARCHAR | Nome |
 | sobrenome | VARCHAR | Sobrenome |
 | email | VARCHAR | E-mail da conta |
+| telefone | VARCHAR | Opcional |
 | ativo | BOOLEAN | Situação |
 | criado_em | TIMESTAMP | Data de criação |
 | atualizado_em | TIMESTAMP | Última alteração |

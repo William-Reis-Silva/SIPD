@@ -138,6 +138,12 @@ Toda congregação deverá possuir um número oficial, único entre as congrega�
 
 ---
 
+### RN-026
+
+Toda congregação criada por autoatendimento deve ter, no momento da criação, um usuário vinculado com perfil Coordenador.
+
+---
+
 # Oradores
 
 ### RN-030

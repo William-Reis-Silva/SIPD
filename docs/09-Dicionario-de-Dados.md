@@ -185,6 +185,7 @@ Os dados relacionados ao domínio são mantidos nesta tabela.
 | nome | VARCHAR | Sim | Não | Não | Não | Nome do usuário |
 | sobrenome | VARCHAR | Sim | Não | Não | Não | Sobrenome do usuário |
 | email | VARCHAR | Sim | Não | Não | Não definido no DER | E-mail utilizado pela conta |
+| telefone | VARCHAR | Não | Não | Não | Não | Telefone do usuário (RN-026); uso futuro como chave de correspondência com Oradores |
 | ativo | BOOLEAN | Sim | Não | Não | Não | Situação da conta |
 | criado_em | TIMESTAMP | Sim | Não | Não | Não | Data de criação |
 | atualizado_em | TIMESTAMP | Sim | Não | Não | Não | Data da última alteração |
