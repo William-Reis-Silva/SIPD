@@ -20,12 +20,23 @@ export type Usuario = {
   perfil: Perfil;
 };
 
-export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+export type AuthStatus = 'loading' | 'authenticated' | 'onboarding' | 'unauthenticated';
+
+export type CompletarCadastroInput = {
+  nomeCongregacao: string;
+  numero: string;
+  cidadeId: string;
+  nomeUsuario: string;
+  sobrenomeUsuario: string;
+  telefone: string;
+};
 
 export type AuthContextValue = {
   status: AuthStatus;
   usuario: Usuario | null;
   signIn: (email: string, senha: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, senha: string) => Promise<{ error: string | null }>;
+  completarCadastro: (input: CompletarCadastroInput) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -33,6 +44,12 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 
 const GENERIC_AUTH_ERROR = 'Não foi possível autenticar. Verifique seu e-mail e senha.';
 const NETWORK_ERROR = 'Não foi possível concluir a autenticação no momento. Tente novamente.';
+const ERRO_EMAIL_EM_USO = 'Esse e-mail já está em uso. Tente entrar na sua conta.';
+const ERRO_SENHA_CURTA = 'A senha precisa ter pelo menos 6 caracteres.';
+const ERRO_SIGNUP_GENERICO = 'Não foi possível criar a conta. Tente novamente.';
+const ERRO_NUMERO_DUPLICADO =
+  'Já existe uma congregação com esse número. Peça para o Coordenador dela te convidar.';
+const ERRO_CADASTRO_GENERICO = 'Não foi possível concluir o cadastro. Tente novamente.';
 
 async function fetchUsuario(userId: string): Promise<Usuario | null> {
   const { data, error } = await supabase
@@ -64,12 +81,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const nextUsuario = await fetchUsuario(session.user.id);
       if (cancelled) return;
 
-      if (!nextUsuario || !nextUsuario.ativo) {
+      if (nextUsuario && !nextUsuario.ativo) {
         await supabase.auth.signOut();
         if (!cancelled) {
           setUsuario(null);
           setStatus('unauthenticated');
         }
+        return;
+      }
+
+      if (!nextUsuario) {
+        // Sessão válida, mas sem linha em `usuarios` ainda — conta recém-criada
+        // via signUp, aguardando o fluxo de Completar Cadastro.
+        setUsuario(null);
+        setStatus('onboarding');
         return;
       }
 
@@ -95,14 +120,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error || !data.session) return { error: GENERIC_AUTH_ERROR };
 
       // Checked here (not just in the onAuthStateChange listener below) so an
-      // inactive account (FA-02) surfaces its error on the login screen itself,
-      // instead of silently bouncing back to login with no message.
+      // inactive account surfaces its error on the login screen itself,
+      // instead of silently bouncing back to login with no message. A missing
+      // `usuarios` row is NOT an error here — onAuthStateChange routes that to
+      // 'onboarding'.
       const nextUsuario = await fetchUsuario(data.session.user.id);
-      if (!nextUsuario || !nextUsuario.ativo) {
+      if (nextUsuario && !nextUsuario.ativo) {
         await supabase.auth.signOut();
         return { error: GENERIC_AUTH_ERROR };
       }
 
+      return { error: null };
+    } catch {
+      return { error: NETWORK_ERROR };
+    }
+  }
+
+  async function signUp(email: string, senha: string): Promise<{ error: string | null }> {
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password: senha });
+      if (error) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('already registered')) return { error: ERRO_EMAIL_EM_USO };
+        if (msg.includes('password')) return { error: ERRO_SENHA_CURTA };
+        return { error: ERRO_SIGNUP_GENERICO };
+      }
+      if (!data.session) return { error: ERRO_SIGNUP_GENERICO };
+
+      return { error: null };
+    } catch {
+      return { error: NETWORK_ERROR };
+    }
+  }
+
+  async function completarCadastro(input: CompletarCadastroInput): Promise<{ error: string | null }> {
+    try {
+      const { error } = await supabase.rpc('completar_cadastro_congregacao', {
+        p_nome_congregacao: input.nomeCongregacao,
+        p_numero: input.numero,
+        p_cidade_id: input.cidadeId,
+        p_nome_usuario: input.nomeUsuario,
+        p_sobrenome_usuario: input.sobrenomeUsuario,
+        p_telefone: input.telefone,
+      });
+
+      if (error) {
+        return { error: error.message.includes('numero_duplicado') ? ERRO_NUMERO_DUPLICADO : ERRO_CADASTRO_GENERICO };
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return { error: ERRO_CADASTRO_GENERICO };
+
+      const nextUsuario = await fetchUsuario(data.session.user.id);
+      if (!nextUsuario) return { error: ERRO_CADASTRO_GENERICO };
+
+      setUsuario(nextUsuario);
+      setStatus('authenticated');
       return { error: null };
     } catch {
       return { error: NETWORK_ERROR };
@@ -114,7 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ status, usuario, signIn, signOut }}>
+    <AuthContext.Provider value={{ status, usuario, signIn, signUp, completarCadastro, signOut }}>
       {children}
     </AuthContext.Provider>
   );
