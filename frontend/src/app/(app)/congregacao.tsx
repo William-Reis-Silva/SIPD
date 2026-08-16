@@ -100,13 +100,19 @@ export default function CongregacaoScreen() {
 
   useEffect(() => {
     if (!editando || !estadoId) return;
+    let ignorar = false;
     supabase
       .from('cidades')
       .select('id, nome')
       .eq('estado_id', estadoId)
       .eq('ativo', true)
       .order('nome')
-      .then(({ data }) => setCidades((data ?? []) as CidadeOpcao[]));
+      .then(({ data }) => {
+        if (!ignorar) setCidades((data ?? []) as CidadeOpcao[]);
+      });
+    return () => {
+      ignorar = true;
+    };
   }, [editando, estadoId]);
 
   async function handleSalvar() {
