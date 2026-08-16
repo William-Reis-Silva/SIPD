@@ -9,8 +9,8 @@ function isEmailValido(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export default function LoginScreen() {
-  const { signIn } = useAuth();
+export default function SignupScreen() {
+  const { signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export default function LoginScreen() {
     }
 
     setEnviando(true);
-    const { error } = await signIn(email.trim(), senha);
+    const { error } = await signUp(email.trim(), senha);
     setEnviando(false);
 
     if (error) {
@@ -42,7 +42,7 @@ export default function LoginScreen() {
       <View className="w-full max-w-sm gap-3">
         <Text className="text-3xl font-bold text-neutral-900 dark:text-white">SIPD</Text>
         <Text className="mb-4 text-base text-neutral-500 dark:text-neutral-400">
-          Entre com sua conta para continuar.
+          Crie sua conta para continuar.
         </Text>
 
         <TextInput
@@ -73,12 +73,12 @@ export default function LoginScreen() {
           {enviando ? (
             <ActivityIndicator />
           ) : (
-            <Text className="font-medium text-white dark:text-neutral-900">Entrar</Text>
+            <Text className="font-medium text-white dark:text-neutral-900">Criar conta</Text>
           )}
         </Pressable>
 
-        <Link href="/signup" className="mt-2 text-center text-sm text-neutral-500 dark:text-neutral-400">
-          Não tem conta? Criar conta
+        <Link href="/login" className="mt-2 text-center text-sm text-neutral-500 dark:text-neutral-400">
+          Já tem conta? Entrar
         </Link>
       </View>
     </SafeAreaView>
