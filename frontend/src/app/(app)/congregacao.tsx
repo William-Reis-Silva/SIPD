@@ -1,75 +1,51 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Dropdown } from 'react-native-element-dropdown';
 
 import { useAuth } from '@/features/administracao/use-auth';
 import { useCongregacao } from '@/features/congregacoes/use-congregacao';
+import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
 type Estado = { id: string; nome: string; uf: string };
 type CidadeOpcao = { id: string; nome: string };
-type SeletorItem = { id: string; label: string };
 
 const PODE_EDITAR = ['Coordenador', 'Administrador Global'];
+const ERRO_CRIAR_CIDADE = 'Não foi possível cadastrar a cidade. Tente novamente.';
 
-function SeletorModal({
-  visivel,
-  titulo,
-  itens,
-  onSelecionar,
-  onFechar,
-}: {
-  visivel: boolean;
-  titulo: string;
-  itens: SeletorItem[];
-  onSelecionar: (id: string) => void;
-  onFechar: () => void;
-}) {
-  return (
-    <Modal visible={visivel} animationType="slide" onRequestClose={onFechar}>
-      <SafeAreaView className="flex-1 bg-white dark:bg-neutral-900">
-        <View className="flex-row items-center justify-between border-b border-neutral-200 p-4 dark:border-neutral-700">
-          <Text className="text-lg font-bold text-neutral-900 dark:text-white">{titulo}</Text>
-          <Pressable onPress={onFechar}>
-            <Text className="text-base text-neutral-500 dark:text-neutral-400">Fechar</Text>
-          </Pressable>
-        </View>
-        <FlatList
-          data={itens}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => onSelecionar(item.id)}
-              className="border-b border-neutral-100 px-4 py-3 dark:border-neutral-800">
-              <Text className="text-base text-neutral-900 dark:text-white">{item.label}</Text>
-            </Pressable>
-          )}
-        />
-      </SafeAreaView>
-    </Modal>
-  );
+function normalizar(texto: string) {
+  return texto.trim().toLowerCase();
 }
 
 export default function CongregacaoScreen() {
   const { usuario } = useAuth();
   const { status, congregacao, atualizar } = useCongregacao();
+  const colors = useTheme();
 
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [criandoCidade, setCriandoCidade] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   const [nome, setNome] = useState('');
   const [numero, setNumero] = useState('');
   const [estadoId, setEstadoId] = useState('');
-  const [estadoLabel, setEstadoLabel] = useState('');
   const [cidadeId, setCidadeId] = useState('');
-  const [cidadeLabel, setCidadeLabel] = useState('');
+  const [cidadeBusca, setCidadeBusca] = useState('');
 
   const [estados, setEstados] = useState<Estado[]>([]);
   const [cidades, setCidades] = useState<CidadeOpcao[]>([]);
-  const [seletorAberto, setSeletorAberto] = useState<'estado' | 'cidade' | null>(null);
 
   const podeEditar = usuario ? PODE_EDITAR.includes(usuario.perfil.nome) : false;
+
+  const dropdownStyle = {
+    height: 50,
+    borderWidth: 1,
+    borderColor: colors.backgroundSelected,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+  };
 
   function iniciarEdicao() {
     if (!congregacao) return;
@@ -77,7 +53,7 @@ export default function CongregacaoScreen() {
     setNumero(congregacao.numero);
     setEstadoId(congregacao.cidade.estado_id);
     setCidadeId(congregacao.cidade_id);
-    setCidadeLabel(congregacao.cidade.nome);
+    setCidadeBusca('');
     setErro(null);
     setEditando(true);
   }
@@ -91,16 +67,11 @@ export default function CongregacaoScreen() {
       .eq('ativo', true)
       .order('nome')
       .then(({ data }) => {
-        if (ignorar) return;
-        const lista = (data ?? []) as Estado[];
-        setEstados(lista);
-        const atual = lista.find((e) => e.id === estadoId);
-        if (atual) setEstadoLabel(`${atual.nome} (${atual.uf})`);
+        if (!ignorar) setEstados((data ?? []) as Estado[]);
       });
     return () => {
       ignorar = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editando]);
 
   useEffect(() => {
@@ -119,6 +90,30 @@ export default function CongregacaoScreen() {
       ignorar = true;
     };
   }, [editando, estadoId]);
+
+  const cidadeEncontrada = cidades.some((c) => normalizar(c.nome) === normalizar(cidadeBusca));
+  const mostrarCriarCidade = !!estadoId && cidadeBusca.trim().length > 0 && !cidadeEncontrada;
+
+  async function handleCriarCidade() {
+    if (!estadoId || !cidadeBusca.trim()) return;
+    setErro(null);
+    setCriandoCidade(true);
+    const { data, error } = await supabase.rpc('encontrar_ou_criar_cidade', {
+      p_estado_id: estadoId,
+      p_nome: cidadeBusca.trim(),
+    });
+    setCriandoCidade(false);
+
+    if (error || !data) {
+      setErro(ERRO_CRIAR_CIDADE);
+      return;
+    }
+
+    const novaCidade = { id: data as string, nome: cidadeBusca.trim() };
+    setCidades((atual) => [...atual, novaCidade].sort((a, b) => a.nome.localeCompare(b.nome)));
+    setCidadeId(novaCidade.id);
+    setCidadeBusca('');
+  }
 
   async function handleSalvar() {
     setErro(null);
@@ -207,16 +202,64 @@ export default function CongregacaoScreen() {
               keyboardType="numeric"
               className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
             />
-            <Pressable
-              onPress={() => setSeletorAberto('estado')}
-              className="rounded-lg border border-neutral-300 px-4 py-3 dark:border-neutral-600">
-              <Text className="text-neutral-900 dark:text-white">{estadoLabel || 'Selecionar Estado'}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => estadoId && setSeletorAberto('cidade')}
-              className="rounded-lg border border-neutral-300 px-4 py-3 dark:border-neutral-600">
-              <Text className="text-neutral-900 dark:text-white">{cidadeLabel || 'Selecionar Cidade'}</Text>
-            </Pressable>
+            <Dropdown
+              style={dropdownStyle}
+              containerStyle={{ backgroundColor: colors.background }}
+              placeholderStyle={{ color: colors.textSecondary }}
+              selectedTextStyle={{ color: colors.text }}
+              itemTextStyle={{ color: colors.text }}
+              activeColor={colors.backgroundSelected}
+              data={estados.map((e) => ({ id: e.id, label: `${e.nome} (${e.uf})` }))}
+              labelField="label"
+              valueField="id"
+              value={estadoId}
+              placeholder="Selecionar Estado"
+              search
+              searchPlaceholder="Buscar Estado..."
+              onChange={(item) => {
+                setEstadoId(item.id);
+                setCidadeId('');
+                setCidadeBusca('');
+                setCidades([]);
+              }}
+            />
+
+            <Dropdown
+              style={dropdownStyle}
+              containerStyle={{ backgroundColor: colors.background }}
+              placeholderStyle={{ color: colors.textSecondary }}
+              selectedTextStyle={{ color: colors.text }}
+              itemTextStyle={{ color: colors.text }}
+              activeColor={colors.backgroundSelected}
+              disable={!estadoId}
+              data={cidades.map((c) => ({ id: c.id, label: c.nome }))}
+              labelField="label"
+              valueField="id"
+              value={cidadeId}
+              placeholder={estadoId ? 'Selecionar Cidade' : 'Selecione o Estado primeiro'}
+              search
+              searchPlaceholder="Buscar Cidade..."
+              onChangeText={setCidadeBusca}
+              onChange={(item) => {
+                setCidadeId(item.id);
+                setCidadeBusca('');
+              }}
+            />
+
+            {mostrarCriarCidade ? (
+              <Pressable
+                onPress={handleCriarCidade}
+                disabled={criandoCidade}
+                className="flex-row items-center justify-center gap-2 rounded-lg border border-dashed border-neutral-400 px-4 py-3 dark:border-neutral-500">
+                {criandoCidade ? (
+                  <ActivityIndicator />
+                ) : (
+                  <Text className="text-sm font-medium text-neutral-900 dark:text-white">
+                    Cadastrar cidade &quot;{cidadeBusca.trim()}&quot;
+                  </Text>
+                )}
+              </Pressable>
+            ) : null}
 
             {erro ? <Text className="text-sm text-red-600 dark:text-red-400">{erro}</Text> : null}
 
@@ -240,34 +283,6 @@ export default function CongregacaoScreen() {
           </View>
         )}
       </View>
-
-      <SeletorModal
-        visivel={seletorAberto === 'estado'}
-        titulo="Selecionar Estado"
-        itens={estados.map((e) => ({ id: e.id, label: `${e.nome} (${e.uf})` }))}
-        onSelecionar={(id) => {
-          const escolhido = estados.find((e) => e.id === id);
-          setEstadoId(id);
-          setEstadoLabel(escolhido ? `${escolhido.nome} (${escolhido.uf})` : '');
-          setCidadeId('');
-          setCidadeLabel('');
-          setCidades([]);
-          setSeletorAberto(null);
-        }}
-        onFechar={() => setSeletorAberto(null)}
-      />
-      <SeletorModal
-        visivel={seletorAberto === 'cidade'}
-        titulo="Selecionar Cidade"
-        itens={cidades.map((c) => ({ id: c.id, label: c.nome }))}
-        onSelecionar={(id) => {
-          const escolhida = cidades.find((c) => c.id === id);
-          setCidadeId(id);
-          setCidadeLabel(escolhida?.nome ?? '');
-          setSeletorAberto(null);
-        }}
-        onFechar={() => setSeletorAberto(null)}
-      />
     </SafeAreaView>
   );
 }

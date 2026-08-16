@@ -7,6 +7,16 @@
 
 ---
 
+## Atualização (2026-08-16, pós-implementação)
+
+O seletor de Cidade descrito abaixo (Modal + lista nativa, "sem nova dependência de UI") foi substituído, a pedido do usuário após o teste manual: em vez de só escolher entre cidades já cadastradas, o campo de Cidade agora é um combobox com busca (`react-native-element-dropdown`, única exceção à regra de "sem dependência nova") que também permite cadastrar uma cidade nova quando ela não existe — reduzindo o risco de digitação inconsistente do nome. O Estado usa o mesmo componente, sem a opção de criar (lista fixa de 27, cadastro de referência do Administrador Global).
+
+Cadastrar uma cidade nova passa a ser permitido para Coordenador e Administrador Global (antes só Admin Global, via `cidades_write`), através de uma função RPC dedicada — `encontrar_ou_criar_cidade(estado_id, nome)`, `security definer`, que normaliza o nome (trim + case-insensitive) antes de decidir se vincula a uma cidade existente ou cria uma nova. A política de escrita direta em `cidades` (`cidades_write`) não mudou — continua restrita ao Administrador Global; a RPC é o único caminho adicional, controlado, para os demais perfis editores de Congregação.
+
+Também foi necessário popular um conjunto básico de estados/cidades (`20260816024852_seed_estados_cidades_basico.sql`) — o banco só tinha Minas Gerais/Timóteo (bootstrap), insuficiente para testar a troca de Estado.
+
+---
+
 ## Contexto
 
 O módulo de Administração (autenticação) está concluído — todo usuário autenticado já carrega `usuario.congregacao_id` e `usuario.perfil.nome` via `useAuth()`. Esta fatia entrega a segunda dependência de base do roadmap (`14-Roadmap.md`): consultar e editar os dados da própria congregação.
