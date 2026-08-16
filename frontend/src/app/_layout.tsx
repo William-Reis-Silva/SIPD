@@ -23,8 +23,12 @@ function RootNavigator() {
       <Stack.Protected guard={status === 'authenticated'}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
+      <Stack.Protected guard={status === 'onboarding'}>
+        <Stack.Screen name="completar-cadastro" />
+      </Stack.Protected>
       <Stack.Protected guard={status === 'unauthenticated'}>
         <Stack.Screen name="login" />
+        <Stack.Screen name="signup" />
       </Stack.Protected>
     </Stack>
   );
