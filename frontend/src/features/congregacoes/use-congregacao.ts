@@ -52,7 +52,7 @@ export function useCongregacao() {
 
     setCongregacao(data as unknown as Congregacao);
     setStatus('ready');
-  }, [usuario]);
+  }, [usuario?.congregacao_id]);
 
   useEffect(() => {
     carregar();

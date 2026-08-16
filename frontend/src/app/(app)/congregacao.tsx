@@ -84,17 +84,22 @@ export default function CongregacaoScreen() {
 
   useEffect(() => {
     if (!editando) return;
+    let ignorar = false;
     supabase
       .from('estados')
       .select('id, nome, uf')
       .eq('ativo', true)
       .order('nome')
       .then(({ data }) => {
+        if (ignorar) return;
         const lista = (data ?? []) as Estado[];
         setEstados(lista);
         const atual = lista.find((e) => e.id === estadoId);
         if (atual) setEstadoLabel(`${atual.nome} (${atual.uf})`);
       });
+    return () => {
+      ignorar = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editando]);
 
@@ -120,6 +125,10 @@ export default function CongregacaoScreen() {
 
     if (!nome.trim() || !numero.trim()) {
       setErro('Informe o nome e o número da congregação.');
+      return;
+    }
+    if (!cidadeId) {
+      setErro('Selecione a cidade da congregação.');
       return;
     }
 
