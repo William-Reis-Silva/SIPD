@@ -124,6 +124,7 @@ Cada congregação está localizada em uma cidade.
 | id | UUID | Sim | Sim | Não | Sim | Identificador único da congregação |
 | cidade_id | UUID | Sim | Não | Sim | Não | Cidade onde a congregação está localizada |
 | nome | VARCHAR | Sim | Não | Não | Não | Nome da congregação |
+| numero | VARCHAR | Sim | Não | Não | Sim | Número oficial de registro da congregação (RN-025) |
 | ativo | BOOLEAN | Sim | Não | Não | Não | Situação da congregação |
 | criado_em | TIMESTAMP | Sim | Não | Não | Não | Data de criação |
 | atualizado_em | TIMESTAMP | Sim | Não | Não | Não | Data da última alteração |
@@ -519,6 +520,7 @@ As principais restrições de unicidade previstas no DER são:
 | estados | nome |
 | estados | uf |
 | cidades | estado_id + nome |
+| congregacoes | numero |
 | oradores | telefone_normalizado |
 | temas | numero |
 | temas_preparados | orador_id + tema_id |

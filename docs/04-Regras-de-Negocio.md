@@ -132,6 +132,12 @@ Cada congregação poderá possuir diversas programações.
 
 ---
 
+### RN-025
+
+Toda congregação deverá possuir um número oficial, único entre as congregações.
+
+---
+
 # Oradores
 
 ### RN-030

@@ -2,7 +2,7 @@
 
 > Sistema Inteligente de Programação de Discursos (SIPD)
 
-**Versão:** 1.2
+**Versão:** 1.3
 
 ---
 
@@ -114,9 +114,14 @@ Cada congregação está localizada em uma cidade.
 | id | UUID | PK |
 | cidade_id | UUID | FK → cidades |
 | nome | VARCHAR | Nome da congregação |
+| numero | VARCHAR | Número oficial de registro, único |
 | ativo | BOOLEAN | Situação |
 | criado_em | TIMESTAMP | Data de criação |
 | atualizado_em | TIMESTAMP | Última alteração |
+
+### Restrições
+
+- `numero` deverá ser único (RN-025).
 
 ### Relacionamentos
 
