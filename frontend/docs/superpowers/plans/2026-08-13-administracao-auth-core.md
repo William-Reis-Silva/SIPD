@@ -1,6 +1,6 @@
 # Administração — Autenticação Core Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Let the existing Administrador Global account log into the SIPD PWA, stay logged in across reloads, and log out — with unauthenticated users unable to reach the app shell.
 
@@ -40,7 +40,7 @@
   - `type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'`, exported from `auth-provider.tsx`.
   - `useAuth(): { status: AuthStatus; usuario: Usuario | null; signIn: (email: string, senha: string) => Promise<{ error: string | null }>; signOut: () => Promise<void> }`, from `use-auth.ts`. Throws if called outside an `AuthProvider`.
 
-- [ ] **Step 1: Create the features directory and write `auth-provider.tsx`**
+- [x] **Step 1: Create the features directory and write `auth-provider.tsx`**
 
 ```tsx
 import { createContext, useEffect, useState, type ReactNode } from 'react';
@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 ```
 
-- [ ] **Step 2: Write `use-auth.ts`**
+- [x] **Step 2: Write `use-auth.ts`**
 
 ```ts
 import { useContext } from 'react';
@@ -182,12 +182,12 @@ export function useAuth() {
 }
 ```
 
-- [ ] **Step 3: Typecheck**
+- [x] **Step 3: Typecheck**
 
 Run (from `frontend/`): `npx tsc --noEmit`
 Expected: no errors. These two files aren't imported anywhere yet, so this only validates their own internal types.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/features/administracao/auth-provider.tsx src/features/administracao/use-auth.ts
@@ -209,7 +209,7 @@ git commit -m "feat(administracao): add AuthProvider and useAuth hook"
 - Consumes: `AuthProvider`, `useAuth` from Task 1.
 - Produces: no new exports — this task wires the two routes (`(app)` and `login`) that Task 3 will keep modifying.
 
-- [ ] **Step 1: Move the current Home screen into the `(app)` group**
+- [x] **Step 1: Move the current Home screen into the `(app)` group**
 
 ```bash
 mkdir -p src/app/\(app\)
@@ -218,7 +218,7 @@ git mv src/app/index.tsx "src/app/(app)/index.tsx"
 
 Do not edit the file's content in this step — it still imports `@/lib/supabase` directly and shows the "Conexão com o Supabase" placeholder. Task 3 replaces that content.
 
-- [ ] **Step 2: Create `(app)/_layout.tsx`**
+- [x] **Step 2: Create `(app)/_layout.tsx`**
 
 ```tsx
 import AppTabs from '@/components/app-tabs';
@@ -230,7 +230,7 @@ export default function AppLayout() {
 
 This preserves the existing tab shell (`AppTabs`, native or web variant resolved automatically by the bundler) — only its position in the route tree changes, from the root to inside `(app)`.
 
-- [ ] **Step 3: Create `login.tsx`**
+- [x] **Step 3: Create `login.tsx`**
 
 ```tsx
 import { useState } from 'react';
@@ -316,7 +316,7 @@ export default function LoginScreen() {
 }
 ```
 
-- [ ] **Step 4: Rewrite the root `_layout.tsx`**
+- [x] **Step 4: Rewrite the root `_layout.tsx`**
 
 ```tsx
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
@@ -363,12 +363,12 @@ export default function RootLayout() {
 }
 ```
 
-- [ ] **Step 5: Typecheck**
+- [x] **Step 5: Typecheck**
 
 Run (from `frontend/`): `npx tsc --noEmit`
 Expected: no errors.
 
-- [ ] **Step 6: Manual verification — unauthenticated and login flow**
+- [x] **Step 6: Manual verification — unauthenticated and login flow**
 
 Run (from `frontend/`): `npm run web`
 
@@ -378,7 +378,7 @@ Run (from `frontend/`): `npm run web`
 
 Stop and fix before proceeding if any of these three don't hold.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add "src/app/(app)/_layout.tsx" "src/app/(app)/index.tsx" src/app/index.tsx src/app/login.tsx src/app/_layout.tsx
@@ -396,7 +396,7 @@ git commit -m "feat(administracao): add protected routing (Stack.Protected) and 
 - Consumes: `useAuth()` from Task 1 (`usuario`, `signOut`).
 - Produces: nothing new for later tasks — this is the last screen in this slice.
 
-- [ ] **Step 1: Rewrite `(app)/index.tsx`**
+- [x] **Step 1: Rewrite `(app)/index.tsx`**
 
 ```tsx
 import { Pressable, Text, View } from 'react-native';
@@ -435,19 +435,19 @@ export default function HomeScreen() {
 }
 ```
 
-- [ ] **Step 2: Typecheck**
+- [x] **Step 2: Typecheck**
 
 Run (from `frontend/`): `npx tsc --noEmit`
 Expected: no errors.
 
-- [ ] **Step 3: Manual verification — home content and logout**
+- [x] **Step 3: Manual verification — home content and logout**
 
 Run (from `frontend/`): `npm run web` (if not still running), log in with the real Administrador Global credentials.
 
 1. Confirm the Home screen shows the real name ("William Silva") and perfil ("Administrador Global") instead of the old connection placeholder.
 2. Tap/click "Sair" → confirm you're redirected to the Login screen (via `Stack.Protected` reacting to the session becoming `null` — no manual navigation call involved).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add "src/app/(app)/index.tsx"
@@ -462,7 +462,7 @@ No code changes expected unless a check below fails. This task confirms the full
 
 **Files:** none (verification only; fix forward in the relevant task's files if something fails).
 
-- [ ] **Step 1: Full typecheck and Expo config check**
+- [x] **Step 1: Full typecheck and Expo config check**
 
 Run (from `frontend/`):
 ```bash
@@ -471,7 +471,7 @@ npx expo-doctor
 ```
 Expected: both clean (0 errors, 20/20 checks).
 
-- [ ] **Step 2: Run the 5-scenario manual verification from the spec**
+- [x] **Step 2: Run the 5-scenario manual verification from the spec**
 
 Run (from `frontend/`): `npm run web`
 
@@ -481,12 +481,12 @@ Run (from `frontend/`): `npm run web`
 4. While logged in, reload the page (F5) → session restored from storage, Home appears directly (no Login flash beyond the brief loading spinner).
 5. While logged in, manually navigate the browser to `/login` → redirected back to `(app)` by `Stack.Protected`.
 
-- [ ] **Step 3: Confirm the web bundle still exports cleanly**
+- [x] **Step 3: Confirm the web bundle still exports cleanly**
 
 Run (from `frontend/`): `npx expo export -p web --output-dir ../../../temp-sipd-verify-export` (use an out-of-repo path so nothing gets committed by accident), then delete the output directory afterward.
 Expected: export completes with no errors; delete the temp directory when done (`rm -rf ../../../temp-sipd-verify-export` or the OS equivalent).
 
-- [ ] **Step 4: Record the outcome**
+- [x] **Step 4: Record the outcome**
 
 If every check in Steps 1–3 passed with no code changes needed, no commit is required for this task — the feature is done as of Task 3's commit. If any fix was needed, commit it against the task whose file it belongs to (amend that task's change set conceptually, but still make a new commit — do not rewrite already-pushed history), e.g.:
 
