@@ -16,6 +16,7 @@ export type Usuario = {
   nome: string;
   sobrenome: string;
   email: string;
+  telefone: string | null;
   ativo: boolean;
   perfil: Perfil;
 };
@@ -54,7 +55,7 @@ const ERRO_CADASTRO_GENERICO = 'Não foi possível concluir o cadastro. Tente no
 async function fetchUsuario(userId: string): Promise<Usuario | null> {
   const { data, error } = await supabase
     .from('usuarios')
-    .select('id, congregacao_id, perfil_id, nome, sobrenome, email, ativo, perfil:perfis(id, nome, descricao)')
+    .select('id, congregacao_id, perfil_id, nome, sobrenome, email, telefone, ativo, perfil:perfis(id, nome, descricao)')
     .eq('id', userId)
     .single();
 
@@ -145,6 +146,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (msg.includes('password')) return { error: ERRO_SENHA_CURTA };
         return { error: ERRO_SIGNUP_GENERICO };
       }
+      // "Sem sessão" aqui só é um erro porque este projeto Supabase tem a
+      // opção "Confirm email" desativada (config do dashboard, fora deste
+      // código). Com ela ativada, "sem sessão ainda" seria o resultado
+      // NORMAL (usuário precisa confirmar o e-mail), não um erro.
       if (!data.session) return { error: ERRO_SIGNUP_GENERICO };
 
       return { error: null };
@@ -165,7 +170,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        return { error: error.message.includes('numero_duplicado') ? ERRO_NUMERO_DUPLICADO : ERRO_CADASTRO_GENERICO };
+        if (error.message.includes('numero_duplicado')) {
+          return { error: ERRO_NUMERO_DUPLICADO };
+        }
+        if (!error.message.includes('usuário já possui cadastro completo')) {
+          return { error: ERRO_CADASTRO_GENERICO };
+        }
+        // A RPC já rodou com sucesso numa tentativa anterior (congregação +
+        // usuario criados), mas o re-sync abaixo falhou antes de chegar em
+        // setStatus('authenticated') (ex.: falha de rede). O usuário ficou
+        // preso em 'onboarding' e reenviou o formulário; a RPC recusou com
+        // seu próprio guard de idempotência. Trata isso como sucesso e cai
+        // direto no re-sync, em vez de devolver um erro genérico que faria
+        // o usuário reenviar para sempre.
       }
 
       const { data } = await supabase.auth.getSession();
