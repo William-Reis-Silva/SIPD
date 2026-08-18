@@ -282,7 +282,6 @@ Representa uma categoria da relação oficial de temas.
 |--------|------|--------------|----|----|--------|-----------|
 | id | UUID | Sim | Sim | Não | Sim | Identificador da categoria |
 | nome | VARCHAR | Sim | Não | Não | Sim | Nome da categoria |
-| descricao | TEXT | Não | Não | Não | Não | Descrição da categoria |
 | ativo | BOOLEAN | Sim | Não | Não | Não | Situação da categoria |
 | criado_em | TIMESTAMP | Sim | Não | Não | Não | Data de criação |
 | atualizado_em | TIMESTAMP | Sim | Não | Não | Não | Data da última alteração |

@@ -260,7 +260,6 @@ Representa uma categoria da relação oficial de temas.
 |--------|------|-------|
 | id | UUID | PK |
 | nome | VARCHAR | Nome da categoria |
-| descricao | TEXT | Descrição |
 | ativo | BOOLEAN | Situação |
 | criado_em | TIMESTAMP | Data de criação |
 | atualizado_em | TIMESTAMP | Última alteração |

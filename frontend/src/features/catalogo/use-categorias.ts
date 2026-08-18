@@ -6,13 +6,12 @@ import { supabase } from '@/lib/supabase';
 export type Categoria = {
   id: string;
   nome: string;
-  descricao: string | null;
   ativo: boolean;
 };
 
 export type CategoriasStatus = 'loading' | 'ready' | 'error';
 
-const CATEGORIAS_SELECT = 'id, nome, descricao, ativo';
+const CATEGORIAS_SELECT = 'id, nome, ativo';
 const ERRO_NOME_DUPLICADO = 'Já existe uma categoria com esse nome.';
 const ERRO_SALVAR = 'Não foi possível salvar. Tente novamente.';
 
@@ -43,8 +42,8 @@ export function useCategorias() {
     carregar();
   }, [carregar]);
 
-  async function criarCategoria(nome: string, descricao: string): Promise<{ error: string | null }> {
-    const { error } = await supabase.from('categorias').insert({ nome, descricao: descricao || null });
+  async function criarCategoria(nome: string): Promise<{ error: string | null }> {
+    const { error } = await supabase.from('categorias').insert({ nome });
 
     if (error) {
       if (error.code === '23505') return { error: ERRO_NOME_DUPLICADO };
@@ -57,11 +56,11 @@ export function useCategorias() {
 
   async function editarCategoria(
     categoria: Categoria,
-    dados: { nome: string; descricao: string; ativo: boolean }
+    dados: { nome: string; ativo: boolean }
   ): Promise<{ error: string | null }> {
     const { error } = await supabase
       .from('categorias')
-      .update({ nome: dados.nome, descricao: dados.descricao || null, ativo: dados.ativo })
+      .update({ nome: dados.nome, ativo: dados.ativo })
       .eq('id', categoria.id);
 
     if (error) {

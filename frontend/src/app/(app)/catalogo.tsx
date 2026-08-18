@@ -33,7 +33,6 @@ export default function CatalogoScreen() {
 
   const [editandoCategoriaId, setEditandoCategoriaId] = useState<string | null>(null);
   const [novaCategoriaNome, setNovaCategoriaNome] = useState('');
-  const [novaCategoriaDescricao, setNovaCategoriaDescricao] = useState('');
   const [mostrarNovaCategoria, setMostrarNovaCategoria] = useState(false);
   const [erroCategoria, setErroCategoria] = useState<string | null>(null);
   const [salvandoCategoria, setSalvandoCategoria] = useState(false);
@@ -104,7 +103,7 @@ export default function CatalogoScreen() {
     }
 
     setSalvandoCategoria(true);
-    const { error } = await criarCategoria(novaCategoriaNome.trim(), novaCategoriaDescricao.trim());
+    const { error } = await criarCategoria(novaCategoriaNome.trim());
     setSalvandoCategoria(false);
 
     if (error) {
@@ -113,11 +112,10 @@ export default function CatalogoScreen() {
     }
 
     setNovaCategoriaNome('');
-    setNovaCategoriaDescricao('');
     setMostrarNovaCategoria(false);
   }
 
-  async function handleEditarCategoria(categoria: Categoria, dados: { nome: string; descricao: string; ativo: boolean }) {
+  async function handleEditarCategoria(categoria: Categoria, dados: { nome: string; ativo: boolean }) {
     setErroCategoria(null);
     setSalvandoCategoria(true);
     const { error } = await editarCategoria(categoria, dados);
@@ -274,9 +272,6 @@ export default function CatalogoScreen() {
               <View key={c.id} className="gap-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
                 <Pressable onPress={() => handleVerTemasDaCategoria(c.id)}>
                   <Text className="text-base font-medium text-neutral-900 dark:text-white">{c.nome}</Text>
-                  {c.descricao ? (
-                    <Text className="text-xs text-neutral-500 dark:text-neutral-400">{c.descricao}</Text>
-                  ) : null}
                   {ehAdministradorGlobal && !c.ativo ? (
                     <Text className="text-xs text-neutral-500 dark:text-neutral-400">Inativo</Text>
                   ) : null}
@@ -308,12 +303,6 @@ export default function CatalogoScreen() {
                     value={novaCategoriaNome}
                     onChangeText={setNovaCategoriaNome}
                     placeholder="Nome"
-                    className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
-                  />
-                  <TextInput
-                    value={novaCategoriaDescricao}
-                    onChangeText={setNovaCategoriaDescricao}
-                    placeholder="Descrição (opcional)"
                     className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
                   />
                   <Pressable
@@ -421,11 +410,10 @@ function EditarCategoriaForm({
 }: {
   categoria: Categoria;
   salvando: boolean;
-  onSalvar: (dados: { nome: string; descricao: string; ativo: boolean }) => void;
+  onSalvar: (dados: { nome: string; ativo: boolean }) => void;
   onCancelar: () => void;
 }) {
   const [nome, setNome] = useState(categoria.nome);
-  const [descricao, setDescricao] = useState(categoria.descricao ?? '');
   const [ativo, setAtivo] = useState(categoria.ativo);
 
   return (
@@ -436,12 +424,6 @@ function EditarCategoriaForm({
         placeholder="Nome"
         className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
       />
-      <TextInput
-        value={descricao}
-        onChangeText={setDescricao}
-        placeholder="Descrição (opcional)"
-        className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
-      />
       <Pressable
         onPress={() => setAtivo(!ativo)}
         className="items-center rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-600">
@@ -449,7 +431,7 @@ function EditarCategoriaForm({
       </Pressable>
       <View className="flex-row gap-3">
         <Pressable
-          onPress={() => onSalvar({ nome, descricao, ativo })}
+          onPress={() => onSalvar({ nome, ativo })}
           disabled={salvando}
           className="flex-1 items-center rounded-lg bg-neutral-900 px-4 py-3 dark:bg-white">
           {salvando ? <ActivityIndicator /> : <Text className="font-medium text-white dark:text-neutral-900">Salvar</Text>}
