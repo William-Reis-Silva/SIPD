@@ -5,6 +5,7 @@ import { Dropdown } from 'react-native-element-dropdown';
 
 import { useAuth } from '@/features/administracao/use-auth';
 import { useTheme } from '@/hooks/use-theme';
+import { MaxContentWidth } from '@/constants/theme';
 import { useCategorias, type Categoria } from '@/features/catalogo/use-categorias';
 import { useTemas, type Tema } from '@/features/catalogo/use-temas';
 
@@ -157,7 +158,8 @@ export default function TemasScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-neutral-900">
-      <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
+      <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }}>
+      <View style={{ width: '100%', maxWidth: MaxContentWidth, gap: 12 }}>
         <Text className="text-2xl font-bold text-neutral-900 dark:text-white">Temas</Text>
 
         <View className="flex-row gap-3">
@@ -337,6 +339,7 @@ export default function TemasScreen() {
             ) : null}
           </>
         )}
+      </View>
       </ScrollView>
     </SafeAreaView>
   );

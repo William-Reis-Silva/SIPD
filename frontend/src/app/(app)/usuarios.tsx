@@ -6,6 +6,7 @@ import * as Linking from 'expo-linking';
 
 import { useAuth } from '@/features/administracao/use-auth';
 import { useTheme } from '@/hooks/use-theme';
+import { MaxContentWidth } from '@/constants/theme';
 import { useUsuariosCongregacao, type UsuarioCongregacao } from '@/features/congregacoes/use-usuarios-congregacao';
 import { useConvitesUsuario } from '@/features/congregacoes/use-convites-usuario';
 
@@ -121,7 +122,8 @@ export default function UsuariosScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-neutral-900">
-      <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
+      <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }}>
+      <View style={{ width: '100%', maxWidth: MaxContentWidth, gap: 12 }}>
         <Text className="text-2xl font-bold text-neutral-900 dark:text-white">Usuários</Text>
 
         {erro ? <Text className="text-sm text-red-600 dark:text-red-400">{erro}</Text> : null}
@@ -285,6 +287,7 @@ export default function UsuariosScreen() {
             )}
           </>
         ) : null}
+      </View>
       </ScrollView>
     </SafeAreaView>
   );
