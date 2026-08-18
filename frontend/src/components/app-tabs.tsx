@@ -21,6 +21,9 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="usuarios">
         <NativeTabs.Trigger.Label>Usuários</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="catalogo">
+        <NativeTabs.Trigger.Label>Catálogo</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
