@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useAuth } from '@/features/administracao/use-auth';
 
@@ -10,6 +10,7 @@ const ERRO_CAMPOS = 'Preencha o código, nome, sobrenome e telefone.';
 export default function AceitarConviteScreen() {
   const { status, usuario, aceitarConvite } = useAuth();
   const params = useLocalSearchParams<{ codigo?: string }>();
+  const router = useRouter();
 
   const [codigo, setCodigo] = useState('');
   const [nome, setNome] = useState('');
@@ -41,7 +42,15 @@ export default function AceitarConviteScreen() {
     const { error } = await aceitarConvite(codigo.trim().toUpperCase(), nome.trim(), sobrenome.trim(), telefone.trim());
     setEnviando(false);
 
-    if (error) setErro(error);
+    if (error) {
+      setErro(error);
+      return;
+    }
+
+    // Esta tela é "sempre alcançável" (fora dos Stack.Protected guards em
+    // _layout.tsx), então o redirecionamento automático de guard não se
+    // aplica aqui — precisa navegar explicitamente após o sucesso.
+    router.replace('/');
   }
 
   if (status === 'unauthenticated') {
