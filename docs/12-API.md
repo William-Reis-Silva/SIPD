@@ -74,11 +74,13 @@
   | UC-CGR-001 | Consultar Congregação | GET | `/rest/v1/congregacoes?id=eq.{id}` | Tabela direta | `congregacoes` |
   | UC-CGR-002 | Atualizar Dados da Congregação | PATCH | `/rest/v1/congregacoes?id=eq.{id}` | Tabela direta | `congregacoes` |
   | UC-CGR-003 | Gerenciar Usuários da Congregação | GET | `/rest/v1/usuarios?congregacao_id=eq.{id}` | Tabela direta | `usuarios` |
-  | | | POST | `/functions/v1/convidar-usuario` | Edge Function² | `usuarios` + `auth.users` |
+  | | | POST | `rpc/criar_convite_usuario` | RPC² | `convites_usuario` |
+  | | | POST | `rpc/aceitar_convite_usuario` | RPC² | `usuarios`, `convites_usuario` |
+  | | | POST | `rpc/cancelar_convite_usuario` | RPC² | `convites_usuario` |
   | | | PATCH | `/rest/v1/usuarios?id=eq.{id}` | Tabela direta | `usuarios` |
   | | | PATCH | `/rest/v1/usuarios?id=eq.{id}` (campo `ativo`) | Tabela direta | `usuarios` |
 
-  ² Convidar um novo usuário exige criar a credencial em `auth.users` via Supabase Auth Admin API, que só pode ser chamada com `service_role` — não é possível a partir do cliente, por isso é Edge Function, não uma escrita direta na tabela `usuarios`.
+  ² Convidar/aceitar/cancelar convite usam RPCs `security definer` (código/link compartilhado manualmente), não uma Edge Function com e-mail real — decisão registrada em `13-ADR.md`, ADR-010 (projeto sem fins lucrativos, sem domínio próprio para autenticar SMTP).
 
   ## Oradores
 

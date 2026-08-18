@@ -251,6 +251,31 @@ Edge Functions são usadas exclusivamente para essas operações — ex.: enviar
 
 ---
 
+## ADR-010 — Convite de usuário por código/link manual, sem Edge Function/e-mail transacional
+
+**Status:** Aceita
+
+**Contexto**
+
+`12-API.md` (nota 2) e o `ADR-009` previam que convidar um novo usuário (UC-CGR-003) exigiria uma Edge Function usando a Supabase Auth Admin API (`inviteUserByEmail`), já que criar credenciais em `auth.users` só é possível com `service_role`. Ao planejar a implementação, verificou-se que o projeto Supabase não tem SMTP customizado configurado (toggle ligado, mas sem host/remetente preenchidos) nem domínio próprio — apenas hospedagem gratuita (`.web.app`/`.vercel.app`), cujo DNS não pode ser usado para autenticar envio de e-mail transacional. Como o SIPD é um projeto sem fins lucrativos, comprar um domínio só para isso foi descartado.
+
+**Decisão**
+
+UC-CGR-003 usa um mecanismo de convite por **código/link gerado e compartilhado manualmente** (RPC `security definer`, mesmo padrão de `completar_cadastro_congregacao`), em vez de Edge Function + e-mail. O convidado recebe o código/link por fora do sistema (ex.: WhatsApp) e o usa para vincular sua conta à congregação.
+
+**Alternativas consideradas**
+
+- Edge Function + Supabase Auth Admin API (`inviteUserByEmail`), como originalmente previsto — descartada por depender de e-mail transacional real, que exige domínio próprio verificado num provedor de SMTP (Resend, SendGrid etc.), custo recorrente incompatível com o caráter sem fins lucrativos do projeto.
+
+**Consequências**
+
+- Positivo: nenhuma dependência de infraestrutura de e-mail — funciona com o que o projeto já tem.
+- Positivo: mesmo padrão de RPC `security definer` já usado em outras fatias, sem introduzir Edge Functions no projeto.
+- Negativo: o compartilhamento do link é manual (fora do sistema), sem confirmação automática de identidade do destinatário — mitigado por um código de 8 caracteres com validade de 7 dias.
+- Negativo: diverge do que `12-API.md`/`ADR-009` previam para este UC especificamente; ambos os documentos foram atualizados para refletir esta decisão.
+
+---
+
 # Considerações Finais
 
 Este registro cobre as decisões arquiteturais e de produto já refletidas na documentação existente até a data de sua elaboração. Ele não substitui `10-Arquitetura.md` (que descreve a arquitetura de forma corrente) nem `STATUS.md` (que registra o histórico de correções de consistência) — complementa ambos, preservando especificamente o raciocínio por trás de cada decisão estrutural.
