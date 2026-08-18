@@ -4,16 +4,16 @@
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/icon-mark.png",
     "scheme": "frontend",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon-ios.png"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/logo.png"
+        "backgroundColor": "#EAF3FF",
+        "foregroundImage": "./assets/images/icon-android-adaptive.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -26,9 +26,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/logo.png",
-          "imageWidth": 76
+          "backgroundColor": "#06265A",
+          "image": "./assets/images/icon-mark.png",
+          "imageWidth": 180
         }
       ]
     ],

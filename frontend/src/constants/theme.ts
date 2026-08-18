@@ -7,20 +7,24 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+// Identidade visual do SIPD — ver docs/DESIGN_SYSTEM.md. Espelha os tokens
+// `brand`/`semantic` do tailwind.config.js para os poucos lugares que
+// precisam de valores JS puros (ex.: `Dropdown` do react-native-element-dropdown,
+// que recebe cor via prop de estilo, não className).
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#1E293B',
+    background: '#FFFFFF',
+    backgroundElement: '#F7F9FC',
+    backgroundSelected: '#EAF3FF',
+    textSecondary: '#64748B',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#F1F5F9',
+    background: '#0A1930',
+    backgroundElement: '#142A4D',
+    backgroundSelected: '#1E3A5F',
+    textSecondary: '#94A3B8',
   },
 } as const;
 
