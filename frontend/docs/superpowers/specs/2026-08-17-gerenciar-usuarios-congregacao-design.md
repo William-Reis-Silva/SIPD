@@ -117,17 +117,6 @@ create policy convites_usuario_select on public.convites_usuario
     public.is_administrador_global()
     or (public.is_coordenador() and congregacao_id = public.current_usuario_congregacao_id())
   );
-
-create policy convites_usuario_cancelar on public.convites_usuario
-  for update to authenticated
-  using (
-    status = 'Pendente'
-    and (public.is_administrador_global() or (public.is_coordenador() and congregacao_id = public.current_usuario_congregacao_id()))
-  )
-  with check (
-    status = 'Cancelado'
-    and (public.is_administrador_global() or (public.is_coordenador() and congregacao_id = public.current_usuario_congregacao_id()))
-  );
 ```
 
 **Ajuste em `historicos_select`** — hoje só libera leitura vinculada a `programacao_id`; Coordenador não conseguia ver histórico de ações sobre usuários da própria congregação:
