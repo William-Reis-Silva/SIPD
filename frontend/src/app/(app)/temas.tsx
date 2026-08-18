@@ -13,7 +13,7 @@ const ERRO_CAMPOS_CATEGORIA = 'Preencha o nome da categoria.';
 
 type Aba = 'temas' | 'categorias';
 
-export default function CatalogoScreen() {
+export default function TemasScreen() {
   const { usuario } = useAuth();
   const colors = useTheme();
   const { status: statusCategorias, categorias, criarCategoria, editarCategoria } = useCategorias();
@@ -148,7 +148,7 @@ export default function CatalogoScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-neutral-900">
       <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
-        <Text className="text-2xl font-bold text-neutral-900 dark:text-white">Catálogo</Text>
+        <Text className="text-2xl font-bold text-neutral-900 dark:text-white">Temas</Text>
 
         <View className="flex-row gap-3">
           <Pressable
