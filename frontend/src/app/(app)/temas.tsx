@@ -91,8 +91,13 @@ export default function TemasScreen() {
     setSalvandoTema(true);
     const { error } = await editarTema(tema, dados);
     setSalvandoTema(false);
+
+    if (error) {
+      setErroTema(error);
+      return;
+    }
+
     setEditandoTemaId(null);
-    if (error) setErroTema(error);
   }
 
   async function handleCriarCategoria() {
@@ -120,8 +125,13 @@ export default function TemasScreen() {
     setSalvandoCategoria(true);
     const { error } = await editarCategoria(categoria, dados);
     setSalvandoCategoria(false);
+
+    if (error) {
+      setErroCategoria(error);
+      return;
+    }
+
     setEditandoCategoriaId(null);
-    if (error) setErroCategoria(error);
   }
 
   const carregando = statusCategorias === 'loading' || statusTemas === 'loading';
@@ -188,7 +198,7 @@ export default function TemasScreen() {
                   {t.numero}. {t.titulo}
                 </Text>
                 <Text className="text-xs text-neutral-500 dark:text-neutral-400">
-                  {t.categoria.nome}
+                  {t.categoria?.nome ?? 'Categoria indisponível'}
                   {ehAdministradorGlobal && !t.ativo ? ' · Inativo' : ''}
                 </Text>
 

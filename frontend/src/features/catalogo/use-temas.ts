@@ -9,7 +9,7 @@ export type Tema = {
   titulo: string;
   ativo: boolean;
   categoria_id: string;
-  categoria: { id: string; nome: string };
+  categoria: { id: string; nome: string } | null;
 };
 
 export type TemasStatus = 'loading' | 'ready' | 'error';
@@ -17,6 +17,17 @@ export type TemasStatus = 'loading' | 'ready' | 'error';
 const TEMAS_SELECT = 'id, numero, titulo, ativo, categoria_id, categoria:categorias(id, nome)';
 const ERRO_NUMERO_DUPLICADO = 'Já existe um tema com esse número.';
 const ERRO_SALVAR = 'Não foi possível salvar. Tente novamente.';
+
+function compararPorNumero(a: Tema, b: Tema): number {
+  const numeroA = parseInt(a.numero, 10);
+  const numeroB = parseInt(b.numero, 10);
+
+  if (!Number.isNaN(numeroA) && !Number.isNaN(numeroB) && numeroA !== numeroB) {
+    return numeroA - numeroB;
+  }
+
+  return a.numero.localeCompare(b.numero);
+}
 
 export function useTemas() {
   const { usuario } = useAuth();
@@ -34,7 +45,8 @@ export function useTemas() {
       return;
     }
 
-    setTemas((data ?? []) as unknown as Tema[]);
+    const ordenados = [...((data ?? []) as unknown as Tema[])].sort(compararPorNumero);
+    setTemas(ordenados);
     setStatus('ready');
   }, [usuario?.id]);
 
