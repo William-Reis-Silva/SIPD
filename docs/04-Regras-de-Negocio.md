@@ -144,6 +144,18 @@ Toda congregação criada por autoatendimento deve ter, no momento da criação,
 
 ---
 
+### RN-027
+
+Um usuário não pode alterar o próprio status de ativo/inativo nem o próprio perfil. Apenas outro usuário com permissão de gerenciamento (Coordenador da congregação ou Administrador Global) pode fazer essas alterações.
+
+---
+
+### RN-028
+
+Um usuário que seja o único Coordenador ativo de sua congregação não pode ser transferido para outra congregação antes que outro usuário assuma o perfil de Coordenador na congregação de origem.
+
+---
+
 # Oradores
 
 ### RN-030

@@ -512,6 +512,45 @@ Representa mensagens apresentadas aos usuários.
 
 ---
 
+## 15. Convites de Usuário
+
+**Tabela:** `convites_usuario`
+
+### Finalidade
+
+Representa um convite de código/link para um usuário se vincular (ou se transferir) a uma congregação, com o perfil definido no convite.
+
+| Coluna | Tipo | Obrigatório | PK | FK | Unique | Descrição |
+|--------|------|--------------|----|----|--------|-----------|
+| id | UUID | Sim | Sim | Não | Sim | Identificador do convite |
+| congregacao_id | UUID | Sim | Não | Sim | Não | Congregação de destino |
+| perfil_id | UUID | Sim | Não | Sim | Não | Perfil atribuído ao aceitar |
+| codigo | VARCHAR | Sim | Não | Não | Sim | Código de 8 caracteres compartilhado manualmente |
+| rotulo | VARCHAR | Não | Não | Não | Não | Anotação livre de quem convidou |
+| status | VARCHAR | Sim | Não | Não | Não | Estado atual do convite |
+| criado_por | UUID | Sim | Não | Sim | Não | Usuário que criou o convite |
+| expira_em | TIMESTAMP | Sim | Não | Não | Não | Validade do convite (7 dias após criação) |
+| aceito_por | UUID | Não | Não | Sim | Não | Usuário que aceitou o convite |
+| aceito_em | TIMESTAMP | Não | Não | Não | Não | Data da aceitação |
+| cancelado_em | TIMESTAMP | Não | Não | Não | Não | Data do cancelamento |
+| criado_em | TIMESTAMP | Sim | Não | Não | Não | Data de criação |
+
+### Chaves estrangeiras
+
+- `congregacao_id` → `congregacoes.id`
+- `perfil_id` → `perfis.id`
+- `criado_por` → `usuarios.id`
+- `aceito_por` → `usuarios.id`
+
+### Estados
+
+- Pendente
+- Aceito
+- Cancelado
+- Expirado
+
+---
+
 # Índices e Restrições de Unicidade
 
 As principais restrições de unicidade previstas no DER são:
