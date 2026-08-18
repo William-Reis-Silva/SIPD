@@ -38,6 +38,12 @@ export type AuthContextValue = {
   signIn: (email: string, senha: string) => Promise<{ error: string | null }>;
   signUp: (email: string, senha: string) => Promise<{ error: string | null }>;
   completarCadastro: (input: CompletarCadastroInput) => Promise<{ error: string | null }>;
+  aceitarConvite: (
+    codigo: string,
+    nome: string,
+    sobrenome: string,
+    telefone: string
+  ) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 };
 
@@ -51,6 +57,11 @@ const ERRO_SIGNUP_GENERICO = 'Não foi possível criar a conta. Tente novamente.
 const ERRO_NUMERO_DUPLICADO =
   'Já existe uma congregação com esse número. Peça para o Coordenador dela te convidar.';
 const ERRO_CADASTRO_GENERICO = 'Não foi possível concluir o cadastro. Tente novamente.';
+const ERRO_CONVITE_INVALIDO = 'Código de convite inválido. Confira e tente novamente.';
+const ERRO_CONVITE_EXPIRADO = 'Esse convite expirou. Peça um novo código.';
+const ERRO_UNICO_COORDENADOR =
+  'Você é o único Coordenador da sua congregação atual. Atribua o cargo a outro usuário antes de aceitar este convite.';
+const ERRO_CONVITE_GENERICO = 'Não foi possível concluir a operação. Tente novamente.';
 
 async function fetchUsuario(userId: string): Promise<Usuario | null> {
   const { data, error } = await supabase
@@ -93,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!nextUsuario) {
         // Sessão válida, mas sem linha em `usuarios` ainda — conta recém-criada
-        // via signUp, aguardando o fluxo de Completar Cadastro.
+        // via signUp, aguardando o fluxo de Completar Cadastro (ou Aceitar Convite).
         setUsuario(null);
         setStatus('onboarding');
         return;
@@ -120,11 +131,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
       if (error || !data.session) return { error: GENERIC_AUTH_ERROR };
 
-      // Checked here (not just in the onAuthStateChange listener below) so an
-      // inactive account surfaces its error on the login screen itself,
-      // instead of silently bouncing back to login with no message. A missing
-      // `usuarios` row is NOT an error here — onAuthStateChange routes that to
-      // 'onboarding'.
       const nextUsuario = await fetchUsuario(data.session.user.id);
       if (nextUsuario && !nextUsuario.ativo) {
         await supabase.auth.signOut();
@@ -146,10 +152,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (msg.includes('password')) return { error: ERRO_SENHA_CURTA };
         return { error: ERRO_SIGNUP_GENERICO };
       }
-      // "Sem sessão" aqui só é um erro porque este projeto Supabase tem a
-      // opção "Confirm email" desativada (config do dashboard, fora deste
-      // código). Com ela ativada, "sem sessão ainda" seria o resultado
-      // NORMAL (usuário precisa confirmar o e-mail), não um erro.
       if (!data.session) return { error: ERRO_SIGNUP_GENERICO };
 
       return { error: null };
@@ -176,13 +178,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!error.message.includes('usuário já possui cadastro completo')) {
           return { error: ERRO_CADASTRO_GENERICO };
         }
-        // A RPC já rodou com sucesso numa tentativa anterior (congregação +
-        // usuario criados), mas o re-sync abaixo falhou antes de chegar em
-        // setStatus('authenticated') (ex.: falha de rede). O usuário ficou
-        // preso em 'onboarding' e reenviou o formulário; a RPC recusou com
-        // seu próprio guard de idempotência. Trata isso como sucesso e cai
-        // direto no re-sync, em vez de devolver um erro genérico que faria
-        // o usuário reenviar para sempre.
       }
 
       const { data } = await supabase.auth.getSession();
@@ -199,12 +194,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function aceitarConvite(
+    codigo: string,
+    nome: string,
+    sobrenome: string,
+    telefone: string
+  ): Promise<{ error: string | null }> {
+    try {
+      const { error } = await supabase.rpc('aceitar_convite_usuario', {
+        p_codigo: codigo,
+        p_nome: nome,
+        p_sobrenome: sobrenome,
+        p_telefone: telefone,
+      });
+
+      if (error) {
+        if (error.message.includes('convite_expirado')) return { error: ERRO_CONVITE_EXPIRADO };
+        if (error.message.includes('convite_invalido')) return { error: ERRO_CONVITE_INVALIDO };
+        if (error.message.includes('unico_coordenador')) return { error: ERRO_UNICO_COORDENADOR };
+        return { error: ERRO_CONVITE_GENERICO };
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return { error: ERRO_CONVITE_GENERICO };
+
+      const nextUsuario = await fetchUsuario(data.session.user.id);
+      if (!nextUsuario) return { error: ERRO_CONVITE_GENERICO };
+
+      setUsuario(nextUsuario);
+      setStatus('authenticated');
+      return { error: null };
+    } catch {
+      return { error: NETWORK_ERROR };
+    }
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
   }
 
   return (
-    <AuthContext.Provider value={{ status, usuario, signIn, signUp, completarCadastro, signOut }}>
+    <AuthContext.Provider
+      value={{ status, usuario, signIn, signUp, completarCadastro, aceitarConvite, signOut }}>
       {children}
     </AuthContext.Provider>
   );
