@@ -14,6 +14,8 @@ UC-CAT-001/002 cobrem consulta de Temas e Categorias, liberada a todos os perfis
 
 `08-DER.md`/`09-Dicionario-de-Dados.md` já especificam o schema de `temas` e `categorias` (ver "Modelo de Dados"). Conferimos o PDF oficial `docs/anexos/S-99a_T.pdf` (extraído via `pdftotext`) para validar o formato real: 191 temas numerados (`número. título`, ex. "4. Que provas temos de que Deus existe?"), agrupados em 10 categorias fixas (Bíblia/Deus, Evangelização/Ministério, Família/Jovens, Fé/Espiritualidade, Mundo — não fazer parte do, Provações/Problemas, Qualidades/Padrões Cristãos, Reino/Paraíso, Religião/Adoração, Últimos Dias/Julgamento de Deus). Confirma o schema já documentado; os dados desse PDF ficam para a fatia de importação (UC-CAT-007).
 
+**Achado ao planejar esta fatia (revisão cruzada do spec):** as tabelas `categorias` e `temas` **já existem**, criadas em `database/migrations/20260812130000_replace_prototype_with_der_schema.sql` (junto com o restante do schema do DER) — esta fatia não parte de um banco vazio para essas duas tabelas, só constrói o frontend (hooks + tela) que ainda não existe. RLS também já existe ali, mas de um jeito mais permissivo do que este spec quer: `categorias_select`/`temas_select` usam `using (true)` (todo `authenticated` vê tudo, incluindo inativos) e `categorias_write`/`temas_write` são policies `for all` restritas a `is_administrador_global()` — o que inclui `DELETE`, contradizendo a convenção de nunca fazer hard delete já seguida no resto do schema (mesmo tipo de lacuna já encontrado em `usuarios` na fatia de UC-CGR-003). Esta fatia revisa essa RLS (ver "Modelo de Dados") em vez de criá-la do zero.
+
 Nenhum UC desta fatia define uma ação de "excluir" Tema/Categoria — só existe a coluna `ativo` no schema. Decisão: tratar isso como ativar/desativar dentro da própria tela de edição, mesmo padrão já usado em Usuários da Congregação (UC-CGR-003) — nunca hard delete.
 
 ## Não-objetivos
@@ -27,40 +29,22 @@ Nenhum UC desta fatia define uma ação de "excluir" Tema/Categoria — só exis
 
 ### Modelo de Dados
 
-Ambas as tabelas já especificadas em `08-DER.md`/`09-Dicionario-de-Dados.md`:
+`categorias` e `temas` já existem (ver "Contexto") com exatamente as colunas de `08-DER.md`/`09-Dicionario-de-Dados.md`. Esta fatia só adiciona a constraint que faltava:
 
 ```sql
-create table public.categorias (
-  id             uuid primary key default gen_random_uuid(),
-  nome           varchar not null,
-  descricao      text,
-  ativo          boolean not null default true,
-  criado_em      timestamptz not null default now(),
-  atualizado_em  timestamptz not null default now(),
-  constraint categorias_nome_key unique (nome)
-);
-
-create table public.temas (
-  id             uuid primary key default gen_random_uuid(),
-  categoria_id   uuid not null references public.categorias (id),
-  numero         varchar not null,
-  titulo         varchar not null,
-  ativo          boolean not null default true,
-  criado_em      timestamptz not null default now(),
-  atualizado_em  timestamptz not null default now(),
-  constraint temas_numero_key unique (numero)
-);
-
-create index temas_categoria_id_idx on public.temas (categoria_id);
+alter table public.categorias
+  add constraint categorias_nome_key unique (nome);
 ```
 
-`categorias.nome` unique: o DER não marcava isso explicitamente ("Unique: Não definido no DER"), mas a FA-01 de UC-CAT-005 ("Categoria já existente") exige a checagem — preenchendo essa lacuna com uma constraint real, mesmo padrão de gap já preenchido em fatias anteriores.
+`categorias.nome` unique: o DER não marcava isso explicitamente ("Unique: Não definido no DER"), mas a FA-01 de UC-CAT-005 ("Categoria já existente") exige a checagem — preenchendo essa lacuna com uma constraint real, mesmo padrão de gap já preenchido em fatias anteriores. (`temas_numero_key` já existe desde a migração original — nada a fazer ali.)
 
-**RLS** — leitura liberada a todo `authenticated`, mas esconde inativos de quem não é Administrador Global; escrita restrita a Administrador Global (reaproveita `is_administrador_global()`, já existente):
+**Revisão de RLS** — as policies atuais (`categorias_select`/`temas_select` com `using (true)`, `categorias_write`/`temas_write` `for all`) são substituídas por versões que (a) escondem inativos de quem não é Administrador Global e (b) removem o `DELETE` implícito do `for all`, fechando a mesma lacuna já corrigida em `usuarios` na fatia de UC-CGR-003:
 
 ```sql
-alter table public.categorias enable row level security;
-alter table public.temas enable row level security;
+drop policy categorias_select on public.categorias;
+drop policy categorias_write on public.categorias;
+drop policy temas_select on public.temas;
+drop policy temas_write on public.temas;
 
 create policy categorias_select on public.categorias
   for select to authenticated
@@ -89,7 +73,7 @@ create policy temas_manage_update on public.temas
   with check (public.is_administrador_global());
 ```
 
-Sem policy de DELETE em nenhuma das duas tabelas — mesma convenção de nunca fazer hard delete já usada no resto do schema.
+Sem policy de DELETE em nenhuma das duas tabelas depois da revisão — mesma convenção de nunca fazer hard delete já usada no resto do schema. Nenhum dado existe ainda nessas tabelas (catálogo nasce vazio nesta fatia), então não há risco de a revisão "esconder" algo que já estava em uso.
 
 Sem trava de coluna via `GRANT` (como foi necessário em `usuarios`): aqui não há campo sensível tipo `id`/FK de identidade que um usuário comum pudesse sequestrar — só Administrador Global tem `UPDATE` de qualquer coluna, então a RLS já basta.
 
@@ -140,6 +124,7 @@ Via `npm run web`:
 8. Buscar por número e por parte do título na aba Temas → confirmar que o filtro funciona nos dois casos.
 9. Na aba Categorias, tocar uma categoria → confirmar que troca para a aba Temas já filtrada por ela.
 10. Tentar um `insert`/`update` direto em `temas`/`categorias` como Editor ou Leitor (bypassando a UI, direto pelo client SDK) → confirmar rejeição pela RLS.
+11. Como Administrador Global, tentar um `delete` direto em `temas`/`categorias` (bypassando a UI) → confirmar rejeição pela RLS (nenhuma policy de DELETE após a revisão — fechamento do `for all` antigo).
 
 ## Documentação a atualizar
 
@@ -149,7 +134,7 @@ Via `npm run web`:
 ## Arquivos afetados
 
 **Novos:**
-- `database/migrations/<timestamp>_catalogo_temas_categorias.sql` (tabelas `categorias`/`temas`, RLS)
+- `database/migrations/<timestamp>_catalogo_temas_categorias.sql` (constraint `categorias_nome_key`, revisão de RLS de `categorias`/`temas` — tabelas já existentes, ver "Contexto")
 - `src/features/catalogo/use-categorias.ts`
 - `src/features/catalogo/use-temas.ts`
 - `src/app/(app)/catalogo.tsx`
