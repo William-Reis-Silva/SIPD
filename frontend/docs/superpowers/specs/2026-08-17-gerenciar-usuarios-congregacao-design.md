@@ -22,6 +22,7 @@ Durante o design, surgiu um cenário adicional não descrito no texto original d
 - Administrador Global gerenciar usuários de uma congregação que não é a sua própria através desta tela (sem seletor de congregação nesta fatia). A tela sempre opera sobre `usuario.congregacao_id` de quem está logado, igual ao padrão já usado em `congregacao.tsx`. Um AG que precise mexer em outra congregação ainda pode fazer isso diretamente pelo Supabase Studio (a RLS já permite).
 - "Remover vínculo" como ação distinta de "desativar". Tratadas como a mesma ação (ver Parte 2 da discussão) — o schema inteiro já segue a convenção de nunca fazer hard delete (sem policy de DELETE em `usuarios`, mesmo padrão de outras tabelas).
 - Reenvio de convite (o Coordenador cancela o pendente e cria um novo, se precisar).
+- Proteção ativa contra força bruta de código de convite (rate limiting dedicado). O espaço de códigos (32^8 ≈ 1,1 trilhão de combinações) já torna adivinhação impraticável frente ao volume de convites pendentes esperado neste app — decisão consciente, revisar se o volume de uso crescer muito.
 - Testes automatizados (projeto ainda sem framework configurado — verificação manual, mesmo padrão das fatias anteriores).
 
 ## Arquitetura
@@ -96,7 +97,16 @@ create trigger usuarios_guard_autoalteracao before update on public.usuarios
 
 A flag `sipd.bypass_self_guard` é ligada só internamente pela RPC `aceitar_convite_usuario` (transação local, via `set_config(..., true)`), no único caso legítimo de alguém alterar o próprio `ativo`/`perfil_id`: aceitar um convite de transferência.
 
-**RLS de `convites_usuario`** (sem policy de INSERT — só é criado via RPC `security definer`):
+**Trava de colunas em `usuarios`** — revisão de segurança (não deste UC originalmente, mas o mesmo objeto está sendo mexido aqui): a policy `usuarios_manage_update` já existente restringe `congregacao_id` corretamente (o `WITH CHECK` já impede um Coordenador mover um usuário para fora da própria congregação), mas **nenhuma policy restringe qual coluna pode ser alterada** — nada impede hoje um `UPDATE usuarios SET id = <uuid de outro auth.users>`, o que sequestraria a identidade de outro usuário autenticado do Supabase (`id` é FK para `auth.users`, sem trava de coluna). RLS não resolve isso sozinha (não há como comparar OLD/NEW dentro de uma única cláusula `USING`/`WITH CHECK`); a correção correta é `GRANT` restrito a nível de coluna, que o Postgres aplica antes mesmo de avaliar RLS:
+
+```sql
+revoke update on public.usuarios from authenticated;
+grant update (nome, sobrenome, telefone, perfil_id, ativo) on public.usuarios to authenticated;
+```
+
+Isso vale tanto para `usuarios_self_update` quanto para `usuarios_manage_update` — nenhuma das duas policies passa a poder tocar `id`, `congregacao_id`, `email` ou `criado_em`/`atualizado_em`, independente do que o payload do cliente tentar enviar. A transferência de congregação continua funcionando normalmente porque acontece dentro da RPC `aceitar_convite_usuario` (`security definer`, roda fora do papel `authenticated` restrito por este GRANT).
+
+**RLS de `convites_usuario`** (sem policy de INSERT nem UPDATE — criação e cancelamento só acontecem via RPC `security definer`, ver "RPCs"):
 
 ```sql
 alter table public.convites_usuario enable row level security;
@@ -176,6 +186,9 @@ begin
   end if;
 
   select nome into v_perfil_nome from public.perfis where id = p_perfil_id;
+  if v_perfil_nome is null then
+    raise exception 'perfil_invalido';
+  end if;
   if v_perfil_nome = 'Administrador Global' and not public.is_administrador_global() then
     raise exception 'sem_permissao_perfil_admin';
   end if;
@@ -207,6 +220,7 @@ begin
 end;
 $$;
 
+revoke execute on function public.criar_convite_usuario(uuid, varchar) from public;
 grant execute on function public.criar_convite_usuario(uuid, varchar) to authenticated;
 ```
 
@@ -304,22 +318,70 @@ begin
 end;
 $$;
 
+revoke execute on function public.aceitar_convite_usuario(varchar, varchar, varchar, varchar) from public;
 grant execute on function public.aceitar_convite_usuario(varchar, varchar, varchar, varchar) to authenticated;
 ```
 
 O `for update` no select do convite evita corrida em aceitação concorrente (duas tentativas simultâneas com o mesmo código).
 
+**`cancelar_convite_usuario`** — cancela um convite `Pendente`. Existe como RPC (em vez de `UPDATE` direto liberado por RLS) para garantir que **nenhuma coluna além de `status`/`cancelado_em` possa ser alterada** nessa operação, mesmo que o cliente tente enviar outros campos — a RPC só aceita o `id` do convite, todo o resto do payload do cliente é ignorado:
+
+```sql
+create or replace function public.cancelar_convite_usuario(
+  p_convite_id uuid
+) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_convite record;
+begin
+  if v_uid is null then
+    raise exception 'não autenticado';
+  end if;
+
+  select * into v_convite from public.convites_usuario where id = p_convite_id for update;
+  if v_convite.id is null then
+    raise exception 'convite_invalido';
+  end if;
+
+  if not (
+    public.is_administrador_global()
+    or (public.is_coordenador() and v_convite.congregacao_id = public.current_usuario_congregacao_id())
+  ) then
+    raise exception 'sem_permissao';
+  end if;
+
+  if v_convite.status <> 'Pendente' then
+    raise exception 'convite_invalido';
+  end if;
+
+  update public.convites_usuario
+  set status = 'Cancelado', cancelado_em = now()
+  where id = p_convite_id;
+
+  insert into public.historicos (usuario_id, tipo, descricao, dados)
+  values (
+    null, 'convite_usuario_cancelado', 'Convite de usuário cancelado',
+    jsonb_build_object('convite_id', p_convite_id, 'cancelado_por', v_uid)
+  );
+end;
+$$;
+
+revoke execute on function public.cancelar_convite_usuario(uuid) from public;
+grant execute on function public.cancelar_convite_usuario(uuid) to authenticated;
+```
+
 ### Frontend
 
 **Novo hook `src/features/congregacoes/use-usuarios-congregacao.ts`:**
 - Lista usuários da congregação (`usuarios_select`, já existente).
-- `atualizarPerfil(usuarioId, perfilId)` / `alternarAtivo(usuarioId, ativo)` — `update` direto via `usuarios_manage_update`.
+- `atualizarPerfil(usuarioId, perfilId)` / `alternarAtivo(usuarioId, ativo)` — `update` direto via `usuarios_manage_update` (restrito às colunas liberadas pelo `GRANT` de coluna, ver "Modelo de Dados"), seguido de um `insert` em `historicos` (`usuario_perfil_alterado` / `usuario_ativado` ou `usuario_desativado`, com o valor anterior e o novo em `dados`).
 - Perfis disponíveis para atribuição: todos exceto "Administrador Global", a menos que quem opera já seja Administrador Global.
 
 **Novo hook `src/features/congregacoes/use-convites-usuario.ts`:**
 - Lista convites `Pendente` (não expirados) da congregação.
 - `criarConvite(perfilId, rotulo)` → RPC `criar_convite_usuario`, devolve código + link para compartilhar (`Share` do React Native).
-- `cancelarConvite(id)` → update direto (`status: 'Cancelado', cancelado_em: now`).
+- `cancelarConvite(id)` → RPC `cancelar_convite_usuario` (não é mais `update` direto — ver "RPCs").
 
 **Tela nova `src/app/(app)/usuarios.tsx`:**
 - Lista de usuários (nome, perfil, status) com ações de editar perfil / ativar-desativar, visíveis só para Coordenador/Administrador Global (`PODE_GERENCIAR`, mesmo padrão de `PODE_EDITAR` em `congregacao.tsx`).
@@ -342,6 +404,7 @@ O `for update` no select do convite evita corrida em aceitação concorrente (du
 | Caso | Origem | Mensagem apresentada |
 |---|---|---|
 | Código de convite inválido/não encontrado | RPC retorna `convite_invalido` | "Código de convite inválido. Confira e tente novamente." |
+| Perfil informado não existe | RPC retorna `perfil_invalido` | "Não foi possível encontrar esse perfil. Tente novamente." |
 | Código expirado | RPC retorna `convite_expirado` | "Esse convite expirou. Peça um novo código." |
 | Convidar sem permissão | RPC retorna `sem_permissao` | "Você não tem permissão para convidar usuários." |
 | Tentar atribuir perfil Administrador Global sem ser Administrador Global | RPC retorna `sem_permissao_perfil_admin` | "Apenas o Administrador Global pode atribuir esse perfil." |
@@ -360,6 +423,11 @@ Via `npm run web`:
 6. Cancelar um convite pendente → confirmar que o código cancelado não é mais aceito por `aceitar_convite_usuario`.
 7. Como Leitor, acessar a tela de usuários → confirmar que não aparece nenhuma ação de gerenciamento.
 8. Deixar um convite expirar (ajustar `expira_em` manualmente no banco para teste) → tentar aceitar → confirmar mensagem de expirado e status atualizado para `Expirado`.
+9. Chamar `criar_convite_usuario`/`aceitar_convite_usuario`/`cancelar_convite_usuario` sem sessão autenticada (ex.: `curl` direto no endpoint RPC do PostgREST, sem token) → confirmar rejeição (`REVOKE ... FROM PUBLIC` + guard interno de `auth.uid()`).
+10. Como Editor ou Leitor, chamar `criar_convite_usuario` diretamente (bypassando a UI) → confirmar `sem_permissao`.
+11. Tentar um `UPDATE` direto em `usuarios` alterando `id` ou `congregacao_id` de outro usuário da própria congregação (bypassando a UI, direto pelo client SDK) → confirmar que o Postgres rejeita por causa do `GRANT UPDATE` restrito a colunas.
+12. Dois clientes aceitando o mesmo código simultaneamente (duas abas/duas contas disparando `aceitar_convite_usuario` ao mesmo tempo) → confirmar que só o primeiro sucede e o segundo recebe `convite_invalido` (`for update` serializa e o segundo vê `status <> 'Pendente'`).
+13. Confirmar que dois convites `Pendente` distintos podem coexistir ao mesmo tempo para a mesma congregação (sem trava de unicidade além do `codigo`).
 
 ## Documentação a atualizar
 
