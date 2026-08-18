@@ -30,6 +30,12 @@ function RootNavigator() {
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
       </Stack.Protected>
+      {/* Sempre alcançável, independente do status — a própria tela decide
+          o que renderizar por status (ver aceitar-convite.tsx). Precisa
+          disso porque um convite de transferência é aceito por alguém já
+          'authenticated', e um convite de conta nova por alguém em
+          'onboarding' ou 'unauthenticated'. */}
+      <Stack.Screen name="aceitar-convite" />
     </Stack>
   );
 }
