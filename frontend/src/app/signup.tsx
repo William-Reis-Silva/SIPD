@@ -80,6 +80,12 @@ export default function SignupScreen() {
         <Link href="/login" className="mt-2 text-center text-sm text-neutral-500 dark:text-neutral-400">
           Já tem conta? Entrar
         </Link>
+
+        <Link
+          href="/aceitar-convite"
+          className="text-center text-sm text-neutral-500 underline dark:text-neutral-400">
+          Tenho um código de convite
+        </Link>
       </View>
     </SafeAreaView>
   );
