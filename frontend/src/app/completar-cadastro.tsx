@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link } from 'expo-router';
 
 import { useAuth } from '@/features/administracao/use-auth';
 import { EstadoCidadePicker } from '@/features/congregacoes/estado-cidade-picker';
@@ -73,6 +74,12 @@ export default function CompletarCadastroScreen() {
         <Text className="text-sm text-neutral-500 dark:text-neutral-400">
           {passo === 1 ? 'Passo 1 de 2 — Dados da congregação' : 'Passo 2 de 2 — Seus dados'}
         </Text>
+
+        {passo === 1 ? (
+          <Link href="/aceitar-convite" className="text-sm text-neutral-500 underline dark:text-neutral-400">
+            Tenho um código de convite
+          </Link>
+        ) : null}
 
         {passo === 1 ? (
           <View className="mt-4 gap-3">
