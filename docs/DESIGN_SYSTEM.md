@@ -82,14 +82,15 @@ Cores atualizadas em `app.json`: `android.adaptiveIcon.backgroundColor` → `#EA
 
 Estado atual do código (verificado, não hipotético):
 
-- `frontend/src/components/app-tabs.web.tsx` já tem um padrão de layout web dedicado (barra de abas horizontal fixa no topo, distinta do `NativeTabs` usado em mobile) com `MaxContentWidth = 800` (`frontend/src/constants/theme.ts`) aplicado só ao **container da barra de abas**.
-- Nenhuma tela de conteúdo (`temas.tsx`, `usuarios.tsx`, `congregacao.tsx`) aplica limite de largura — todas usam `<ScrollView className="flex-1 px-6 pt-6">` sem `maxWidth`. Em desktop/PWA isso deixa o conteúdo esticar até a borda da janela, o que fica ruim em telas largas (cards e formulários muito esticados, texto difícil de escanear).
+- `frontend/src/components/app-tabs.web.tsx` já tem um padrão de layout web dedicado (barra de abas horizontal fixa no topo, distinta do `NativeTabs` usado em mobile) com `MaxContentWidth = 800` (`frontend/src/constants/theme.ts`) aplicado ao **container da barra de abas**.
+- Telas de formulário estreito (`login.tsx`, `signup.tsx`, `completar-cadastro.tsx`, `aceitar-convite.tsx`, `congregacao.tsx`, `index.tsx`) já usam um wrapper interno `w-full max-w-sm` (384px) — bem abaixo de qualquer largura de desktop, não precisavam de tratamento.
+- `temas.tsx` e `usuarios.tsx` (listas com `ScrollView`) não tinham nenhum limite — o conteúdo esticava até a borda da janela em telas largas.
 
-**Convenção recomendada para telas novas:** envolver o conteúdo de cada tela num container centralizado com `maxWidth: MaxContentWidth` (mesma constante já usada na barra de abas, 800px), mantendo o fundo (`SafeAreaView`) full-bleed. Isso é aditivo — não muda comportamento em mobile (onde a viewport já é menor que 800px na prática) e resolve o esticamento em desktop.
+**Convenção aplicada:** o conteúdo do `ScrollView` fica dentro de um `View` com `width: '100%', maxWidth: MaxContentWidth`, e `contentContainerStyle={{ alignItems: 'center' }}` no `ScrollView` centraliza esse container. Aditivo — sem mudança visual em mobile (viewport já é menor que 800px na prática).
 
-Isso **não foi aplicado retroativamente** às telas existentes nesta rodada — ficou fora do escopo do que foi pedido agora (cores + assets). Recomendo tratar como uma tarefa própria (retrofit das telas existentes + esse padrão documentado para as novas), já que toca todas as telas de uma vez.
+Aplicado em `temas.tsx` e `usuarios.tsx`. Se uma tela nova usar o padrão `ScrollView` de lista (em vez do padrão `max-w-sm` de formulário), seguir a mesma convenção.
 
-Breakpoints, grid multi-coluna em desktop, e demais decisões de responsividade (ex.: sidebar fixa vs. barra de abas em telas muito largas) ainda não foram definidos — ficam como próximo assunto quando o retrofit acima for discutido.
+Breakpoints, grid multi-coluna em desktop, e demais decisões de responsividade (ex.: sidebar fixa vs. barra de abas em telas muito largas) ainda não foram definidos — ficam como próximo assunto quando isso for necessário.
 
 ---
 
