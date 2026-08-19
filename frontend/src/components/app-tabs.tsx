@@ -24,6 +24,9 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="temas">
         <NativeTabs.Trigger.Label>Temas</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="oradores">
+        <NativeTabs.Trigger.Label>Oradores</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
