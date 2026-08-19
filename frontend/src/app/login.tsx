@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 
@@ -40,7 +40,12 @@ export default function LoginScreen() {
   return (
     <SafeAreaView className="flex-1 items-center justify-center bg-white px-6 dark:bg-neutral-900">
       <View className="w-full max-w-sm gap-3">
-        <Text className="text-3xl font-bold text-neutral-900 dark:text-white">SIPD</Text>
+        <Image
+          source={require('../../assets/images/logo.png')}
+          style={{ width: 220, height: 220, alignSelf: 'center' }}
+          resizeMode="contain"
+          accessibilityLabel="SIPD"
+        />
         <Text className="mb-4 text-base text-neutral-500 dark:text-neutral-400">
           Entre com sua conta para continuar.
         </Text>
