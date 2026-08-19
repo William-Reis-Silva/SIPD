@@ -12,6 +12,14 @@ import { useTemas } from '@/features/catalogo/use-temas';
 
 const PODE_GERENCIAR = ['Coordenador', 'Editor', 'Administrador Global'];
 
+function buscarTemaPorNumeroExato(keyword: string, labelValue: string): boolean {
+  const numero = labelValue.split('.')[0];
+  if (/^\d+$/.test(keyword)) {
+    return numero === keyword;
+  }
+  return labelValue.toLowerCase().includes(keyword.toLowerCase());
+}
+
 export default function OradoresListaScreen() {
   const { usuario } = useAuth();
   const colors = useTheme();
@@ -85,6 +93,7 @@ export default function OradoresListaScreen() {
             value={temaFiltroId ?? ''}
             placeholder="Filtrar por tema"
             search
+            searchQuery={buscarTemaPorNumeroExato}
             searchPlaceholder="Buscar tema..."
             onChange={(item) => setTemaFiltroId(item.id || null)}
           />

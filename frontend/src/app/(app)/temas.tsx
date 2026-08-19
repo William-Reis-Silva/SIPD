@@ -53,10 +53,10 @@ export default function TemasScreen() {
     return temas.filter((t) => {
       if (categoriaFiltro && t.categoria_id !== categoriaFiltro) return false;
       if (!buscaNormalizada) return true;
-      return (
-        t.numero.toLowerCase().includes(buscaNormalizada) ||
-        t.titulo.toLowerCase().includes(buscaNormalizada)
-      );
+      if (/^\d+$/.test(buscaNormalizada)) {
+        return t.numero.toLowerCase() === buscaNormalizada;
+      }
+      return t.titulo.toLowerCase().includes(buscaNormalizada);
     });
   }, [temas, busca, categoriaFiltro]);
 
