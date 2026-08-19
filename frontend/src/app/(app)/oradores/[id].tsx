@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Dropdown } from 'react-native-element-dropdown';
@@ -7,12 +7,15 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/features/administracao/use-auth';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth } from '@/constants/theme';
+import { supabase } from '@/lib/supabase';
 import { useOradores, type Orador } from '@/features/oradores/use-oradores';
 import { useTemasPreparados, type TemaPreparado } from '@/features/oradores/use-temas-preparados';
 import { useHistoricoOrador } from '@/features/oradores/use-historico-orador';
 import { useTemas } from '@/features/catalogo/use-temas';
 import { normalizarTelefone, formatarTelefone } from '@/features/oradores/telefone';
 import { EstadoCidadePicker } from '@/features/congregacoes/estado-cidade-picker';
+
+type CongregacaoOpcao = { id: string; nome: string; numero: string };
 
 const PODE_GERENCIAR = ['Coordenador', 'Editor', 'Administrador Global'];
 const ERRO_CAMPOS = 'Preencha nome, sobrenome, telefone, cidade e congregação de origem.';
@@ -110,8 +113,31 @@ function SecaoDados({
   const [estadoId, setEstadoId] = useState(orador.cidade.estado_id);
   const [cidadeId, setCidadeId] = useState(orador.cidade_id);
   const [congregacaoOrigemId, setCongregacaoOrigemId] = useState(orador.congregacao_origem_id);
+  const [congregacoes, setCongregacoes] = useState<CongregacaoOpcao[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+
+  const dropdownStyle = {
+    height: 50,
+    borderWidth: 1,
+    borderColor: colors.backgroundSelected,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+  };
+
+  useEffect(() => {
+    let ignorar = false;
+    supabase
+      .from('congregacoes')
+      .select('id, nome, numero')
+      .order('nome')
+      .then(({ data }) => {
+        if (!ignorar) setCongregacoes((data ?? []) as CongregacaoOpcao[]);
+      });
+    return () => {
+      ignorar = true;
+    };
+  }, []);
 
   function iniciarEdicao() {
     setNome(orador.nome);
@@ -232,6 +258,23 @@ function SecaoDados({
         onEstadoChange={setEstadoId}
         onCidadeChange={setCidadeId}
         onErro={setErro}
+      />
+
+      <Dropdown
+        style={dropdownStyle}
+        containerStyle={{ backgroundColor: colors.background }}
+        placeholderStyle={{ color: colors.textSecondary }}
+        selectedTextStyle={{ color: colors.text }}
+        itemTextStyle={{ color: colors.text }}
+        activeColor={colors.backgroundSelected}
+        data={congregacoes.map((c) => ({ id: c.id, label: `${c.nome} (${c.numero})` }))}
+        labelField="label"
+        valueField="id"
+        value={congregacaoOrigemId}
+        placeholder="Congregação de origem"
+        search
+        searchPlaceholder="Buscar congregação..."
+        onChange={(item) => setCongregacaoOrigemId(item.id)}
       />
 
       {erro ? <Text className="text-sm text-red-600 dark:text-red-400">{erro}</Text> : null}
