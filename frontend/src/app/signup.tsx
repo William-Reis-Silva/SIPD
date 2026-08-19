@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 
@@ -38,9 +38,15 @@ export default function SignupScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 items-center justify-center bg-white px-6 dark:bg-neutral-900">
+    <SafeAreaView className="flex-1 items-center justify-center bg-white px-6 dark:bg-brand-light-dark">
       <View className="w-full max-w-sm gap-3">
-        <Text className="text-3xl font-bold text-neutral-900 dark:text-white">SIPD</Text>
+        <Image
+          source={require('../../assets/images/icon-mark.png')}
+          style={{ width: 120, height: 120, alignSelf: 'center' }}
+          resizeMode="contain"
+          accessibilityLabel="SIPD"
+        />
+        <Text className="text-center text-3xl font-bold text-neutral-900 dark:text-white">SIPD</Text>
         <Text className="mb-4 text-base text-neutral-500 dark:text-neutral-400">
           Crie sua conta para continuar.
         </Text>

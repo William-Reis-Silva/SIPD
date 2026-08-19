@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 
@@ -63,8 +63,14 @@ export default function CompletarCadastroScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white px-6 pt-6 dark:bg-neutral-900">
+    <SafeAreaView className="flex-1 bg-white px-6 pt-6 dark:bg-brand-light-dark">
       <View className="w-full max-w-sm gap-3 self-center">
+        <Image
+          source={require('../../assets/images/icon-mark.png')}
+          style={{ width: 60, height: 60, alignSelf: 'center' }}
+          resizeMode="contain"
+          accessibilityLabel="SIPD"
+        />
         <View className="flex-row items-center justify-between">
           <Text className="text-2xl font-bold text-neutral-900 dark:text-white">Completar Cadastro</Text>
           <Pressable onPress={() => signOut()}>
