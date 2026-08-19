@@ -23,6 +23,14 @@ const ERRO_TELEFONE_INVALIDO = 'Informe um telefone válido, com DDD.';
 
 type Secao = 'dados' | 'temas' | 'historico';
 
+function buscarTemaPorNumeroExato(keyword: string, labelValue: string): boolean {
+  const numero = labelValue.split('.')[0];
+  if (/^\d+$/.test(keyword)) {
+    return numero === keyword;
+  }
+  return labelValue.toLowerCase().includes(keyword.toLowerCase());
+}
+
 function formatarDataHora(iso: string) {
   return new Date(iso).toLocaleString('pt-BR');
 }
@@ -266,6 +274,7 @@ function SecaoDados({
         placeholderStyle={{ color: colors.textSecondary }}
         selectedTextStyle={{ color: colors.text }}
         itemTextStyle={{ color: colors.text }}
+        inputSearchStyle={{ color: colors.text }}
         activeColor={colors.backgroundSelected}
         data={congregacoes.map((c) => ({ id: c.id, label: `${c.nome} (${c.numero})` }))}
         labelField="label"
@@ -409,6 +418,7 @@ function SecaoTemasPreparados({
             placeholderStyle={{ color: colors.textSecondary }}
             selectedTextStyle={{ color: colors.text }}
             itemTextStyle={{ color: colors.text }}
+            inputSearchStyle={{ color: colors.text }}
             activeColor={colors.backgroundSelected}
             data={temasDisponiveis.map((t) => ({ id: t.id, label: `${t.numero}. ${t.titulo}` }))}
             labelField="label"
@@ -416,6 +426,7 @@ function SecaoTemasPreparados({
             value={temaParaAdicionar}
             placeholder="Selecionar tema"
             search
+            searchQuery={buscarTemaPorNumeroExato}
             searchPlaceholder="Buscar tema..."
             onChange={(item) => setTemaParaAdicionar(item.id)}
           />

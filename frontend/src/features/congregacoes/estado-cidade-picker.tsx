@@ -106,6 +106,7 @@ export function EstadoCidadePicker({
         placeholderStyle={{ color: colors.textSecondary }}
         selectedTextStyle={{ color: colors.text }}
         itemTextStyle={{ color: colors.text }}
+        inputSearchStyle={{ color: colors.text }}
         activeColor={colors.backgroundSelected}
         data={estados.map((e) => ({ id: e.id, label: `${e.nome} (${e.uf})` }))}
         labelField="label"
@@ -128,6 +129,7 @@ export function EstadoCidadePicker({
         placeholderStyle={{ color: colors.textSecondary }}
         selectedTextStyle={{ color: colors.text }}
         itemTextStyle={{ color: colors.text }}
+        inputSearchStyle={{ color: colors.text }}
         activeColor={colors.backgroundSelected}
         disable={!estadoId}
         data={cidades.map((c) => ({ id: c.id, label: c.nome }))}

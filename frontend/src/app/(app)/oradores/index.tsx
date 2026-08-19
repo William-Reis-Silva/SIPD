@@ -86,6 +86,7 @@ export default function OradoresListaScreen() {
             placeholderStyle={{ color: colors.textSecondary }}
             selectedTextStyle={{ color: colors.text }}
             itemTextStyle={{ color: colors.text }}
+            inputSearchStyle={{ color: colors.text }}
             activeColor={colors.backgroundSelected}
             data={[{ id: '', label: 'Todos os temas' }, ...temas.map((t) => ({ id: t.id, label: `${t.numero}. ${t.titulo}` }))]}
             labelField="label"

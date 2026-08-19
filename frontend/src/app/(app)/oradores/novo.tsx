@@ -138,6 +138,7 @@ export default function NovoOradorScreen() {
             placeholderStyle={{ color: colors.textSecondary }}
             selectedTextStyle={{ color: colors.text }}
             itemTextStyle={{ color: colors.text }}
+            inputSearchStyle={{ color: colors.text }}
             activeColor={colors.backgroundSelected}
             data={congregacoes.map((c) => ({ id: c.id, label: `${c.nome} (${c.numero})` }))}
             labelField="label"
