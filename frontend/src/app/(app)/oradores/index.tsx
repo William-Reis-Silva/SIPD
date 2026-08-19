@@ -20,6 +20,18 @@ function buscarTemaPorNumeroExato(keyword: string, labelValue: string): boolean 
   return labelValue.toLowerCase().includes(keyword.toLowerCase());
 }
 
+function ordenarTemasPorRelevancia<T extends { titulo: string }>(temas: T[], busca: string): T[] {
+  const buscaNormalizada = busca.trim().toLowerCase();
+  if (!buscaNormalizada || /^\d+$/.test(buscaNormalizada)) return temas;
+
+  return [...temas].sort((a, b) => {
+    const aComeca = a.titulo.toLowerCase().startsWith(buscaNormalizada);
+    const bComeca = b.titulo.toLowerCase().startsWith(buscaNormalizada);
+    if (aComeca === bComeca) return 0;
+    return aComeca ? -1 : 1;
+  });
+}
+
 export default function OradoresListaScreen() {
   const { usuario } = useAuth();
   const colors = useTheme();
@@ -28,6 +40,7 @@ export default function OradoresListaScreen() {
 
   const [busca, setBusca] = useState('');
   const [temaFiltroId, setTemaFiltroId] = useState<string | null>(null);
+  const [temaFiltroBusca, setTemaFiltroBusca] = useState('');
 
   const podeGerenciar = usuario ? PODE_GERENCIAR.includes(usuario.perfil.nome) : false;
 
@@ -48,6 +61,11 @@ export default function OradoresListaScreen() {
       return nomeCompleto.includes(buscaNormalizada) || o.telefone_normalizado.includes(buscaNormalizada);
     });
   }, [oradores, busca, temaFiltroId]);
+
+  const temaOpcoes = useMemo(
+    () => ordenarTemasPorRelevancia(temas, temaFiltroBusca),
+    [temas, temaFiltroBusca]
+  );
 
   if (status === 'loading') {
     return (
@@ -88,7 +106,7 @@ export default function OradoresListaScreen() {
             itemTextStyle={{ color: colors.text }}
             inputSearchStyle={{ color: colors.text }}
             activeColor={colors.backgroundSelected}
-            data={[{ id: '', label: 'Todos os temas' }, ...temas.map((t) => ({ id: t.id, label: `${t.numero}. ${t.titulo}` }))]}
+            data={[{ id: '', label: 'Todos os temas' }, ...temaOpcoes.map((t) => ({ id: t.id, label: `${t.numero}. ${t.titulo}` }))]}
             labelField="label"
             valueField="id"
             value={temaFiltroId ?? ''}
@@ -96,6 +114,7 @@ export default function OradoresListaScreen() {
             search
             searchQuery={buscarTemaPorNumeroExato}
             searchPlaceholder="Buscar tema..."
+            onChangeText={setTemaFiltroBusca}
             onChange={(item) => setTemaFiltroId(item.id || null)}
           />
 

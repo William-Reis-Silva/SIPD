@@ -31,6 +31,18 @@ function buscarTemaPorNumeroExato(keyword: string, labelValue: string): boolean 
   return labelValue.toLowerCase().includes(keyword.toLowerCase());
 }
 
+function ordenarTemasPorRelevancia<T extends { titulo: string }>(temas: T[], busca: string): T[] {
+  const buscaNormalizada = busca.trim().toLowerCase();
+  if (!buscaNormalizada || /^\d+$/.test(buscaNormalizada)) return temas;
+
+  return [...temas].sort((a, b) => {
+    const aComeca = a.titulo.toLowerCase().startsWith(buscaNormalizada);
+    const bComeca = b.titulo.toLowerCase().startsWith(buscaNormalizada);
+    if (aComeca === bComeca) return 0;
+    return aComeca ? -1 : 1;
+  });
+}
+
 function formatarDataHora(iso: string) {
   return new Date(iso).toLocaleString('pt-BR');
 }
@@ -319,6 +331,7 @@ function SecaoTemasPreparados({
   const { temas } = useTemas();
 
   const [temaParaAdicionar, setTemaParaAdicionar] = useState('');
+  const [temaParaAdicionarBusca, setTemaParaAdicionarBusca] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [processando, setProcessando] = useState(false);
   const [observacoesEmEdicao, setObservacoesEmEdicao] = useState<Record<string, string>>({});
@@ -333,8 +346,9 @@ function SecaoTemasPreparados({
 
   const temasDisponiveis = useMemo(() => {
     const jaAdicionados = new Set(temasPreparados.map((tp) => tp.tema_id));
-    return temas.filter((t) => t.ativo && !jaAdicionados.has(t.id));
-  }, [temas, temasPreparados]);
+    const disponiveis = temas.filter((t) => t.ativo && !jaAdicionados.has(t.id));
+    return ordenarTemasPorRelevancia(disponiveis, temaParaAdicionarBusca);
+  }, [temas, temasPreparados, temaParaAdicionarBusca]);
 
   async function handleAdicionar() {
     setErro(null);
@@ -428,6 +442,7 @@ function SecaoTemasPreparados({
             search
             searchQuery={buscarTemaPorNumeroExato}
             searchPlaceholder="Buscar tema..."
+            onChangeText={setTemaParaAdicionarBusca}
             onChange={(item) => setTemaParaAdicionar(item.id)}
           />
           <Pressable
