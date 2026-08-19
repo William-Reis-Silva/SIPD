@@ -50,13 +50,24 @@ export default function TemasScreen() {
 
   const temasFiltrados = useMemo(() => {
     const buscaNormalizada = busca.trim().toLowerCase();
-    return temas.filter((t) => {
+    const buscaEhNumero = /^\d+$/.test(buscaNormalizada);
+
+    const filtrados = temas.filter((t) => {
       if (categoriaFiltro && t.categoria_id !== categoriaFiltro) return false;
       if (!buscaNormalizada) return true;
-      if (/^\d+$/.test(buscaNormalizada)) {
+      if (buscaEhNumero) {
         return t.numero.toLowerCase() === buscaNormalizada;
       }
       return t.titulo.toLowerCase().includes(buscaNormalizada);
+    });
+
+    if (!buscaNormalizada || buscaEhNumero) return filtrados;
+
+    return [...filtrados].sort((a, b) => {
+      const aComeca = a.titulo.toLowerCase().startsWith(buscaNormalizada);
+      const bComeca = b.titulo.toLowerCase().startsWith(buscaNormalizada);
+      if (aComeca === bComeca) return 0;
+      return aComeca ? -1 : 1;
     });
   }, [temas, busca, categoriaFiltro]);
 
