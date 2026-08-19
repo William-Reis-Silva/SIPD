@@ -53,6 +53,9 @@ create trigger travar_origem_orador_vinculado
 -- ficavam invisíveis para quem não é Administrador Global — a policy de
 -- INSERT já permitia programacao_id NULL para todo authenticated, então essa
 -- leitura já deveria ter sido liberada do mesmo jeito.
+-- IMPORTANTE: Esta revisão PRESERVA a terceira branch original que permite
+-- Coordenadores ver histórico sobre ações de gerenciamento de usuários na
+-- sua congregação (usuarios-based branch).
 -- ----------------------------------------------------------------------------
 drop policy historicos_select on public.historicos;
 
@@ -65,5 +68,10 @@ create policy historicos_select on public.historicos
       select 1 from public.programacoes p
       where p.id = historicos.programacao_id
         and p.congregacao_id = public.current_usuario_congregacao_id()
+    )
+    or exists (
+      select 1 from public.usuarios u
+      where u.id = historicos.usuario_id
+        and u.congregacao_id = public.current_usuario_congregacao_id()
     )
   );
