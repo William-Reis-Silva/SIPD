@@ -38,14 +38,15 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 items-center justify-center bg-white px-6 dark:bg-neutral-900">
+    <SafeAreaView className="flex-1 items-center justify-center bg-white px-6 dark:bg-brand-light-dark">
       <View className="w-full max-w-sm gap-3">
         <Image
-          source={require('../../assets/images/logo.png')}
-          style={{ width: 220, height: 220, alignSelf: 'center' }}
+          source={require('../../assets/images/icon-mark.png')}
+          style={{ width: 120, height: 120, alignSelf: 'center' }}
           resizeMode="contain"
           accessibilityLabel="SIPD"
         />
+        <Text className="text-center text-3xl font-bold text-neutral-900 dark:text-white">SIPD</Text>
         <Text className="mb-4 text-base text-neutral-500 dark:text-neutral-400">
           Entre com sua conta para continuar.
         </Text>
