@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Dropdown } from 'react-native-element-dropdown';
+import { Dropdown, type IDropdownRef } from 'react-native-element-dropdown';
 import { router } from 'expo-router';
 
 import { useTheme } from '@/hooks/use-theme';
@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useOradores } from '@/features/oradores/use-oradores';
 import { normalizarTelefone } from '@/features/oradores/telefone';
 import { EstadoCidadePicker } from '@/features/congregacoes/estado-cidade-picker';
+import { DropdownSearchInput, encontrarPrimeiraCorrespondencia } from '@/components/dropdown-search-input';
 
 type CongregacaoOpcao = { id: string; nome: string; numero: string };
 
@@ -20,6 +21,7 @@ export default function NovoOradorScreen() {
   const colors = useTheme();
   const { criarOrador } = useOradores();
 
+  const congregacaoRef = useRef<IDropdownRef>(null);
   const [congregacoes, setCongregacoes] = useState<CongregacaoOpcao[]>([]);
   const [nome, setNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
@@ -28,6 +30,7 @@ export default function NovoOradorScreen() {
   const [estadoId, setEstadoId] = useState('');
   const [cidadeId, setCidadeId] = useState('');
   const [congregacaoOrigemId, setCongregacaoOrigemId] = useState('');
+  const [congregacaoBusca, setCongregacaoBusca] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -86,6 +89,12 @@ export default function NovoOradorScreen() {
     router.replace(`/oradores/${orador.id}`);
   }
 
+  const congregacaoOpcoes = congregacoes.map((c) => ({ id: c.id, label: `${c.nome} (${c.numero})` }));
+
+  function selecionarCongregacao(item: { id: string; label: string }) {
+    setCongregacaoOrigemId(item.id);
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-neutral-900">
       <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }}>
@@ -133,6 +142,7 @@ export default function NovoOradorScreen() {
           />
 
           <Dropdown
+            ref={congregacaoRef}
             style={dropdownStyle}
             containerStyle={{ backgroundColor: colors.background }}
             placeholderStyle={{ color: colors.textSecondary }}
@@ -140,14 +150,29 @@ export default function NovoOradorScreen() {
             itemTextStyle={{ color: colors.text }}
             inputSearchStyle={{ color: colors.text }}
             activeColor={colors.backgroundSelected}
-            data={congregacoes.map((c) => ({ id: c.id, label: `${c.nome} (${c.numero})` }))}
+            data={congregacaoOpcoes}
             labelField="label"
             valueField="id"
             value={congregacaoOrigemId}
             placeholder="Congregação de origem"
             search
             searchPlaceholder="Buscar congregação..."
-            onChange={(item) => setCongregacaoOrigemId(item.id)}
+            onChangeText={setCongregacaoBusca}
+            onChange={selecionarCongregacao}
+            renderInputSearch={(onSearch) => (
+              <DropdownSearchInput
+                value={congregacaoBusca}
+                onChangeText={onSearch}
+                onSubmitPrimeiraCorrespondencia={() => {
+                  const primeiro = encontrarPrimeiraCorrespondencia(congregacaoOpcoes, 'label', congregacaoBusca);
+                  if (primeiro) selecionarCongregacao(primeiro);
+                  congregacaoRef.current?.close();
+                }}
+                placeholder="Buscar congregação..."
+                placeholderTextColor={colors.textSecondary}
+                color={colors.text}
+              />
+            )}
           />
 
           {erro ? <Text className="text-sm text-red-600 dark:text-red-400">{erro}</Text> : null}

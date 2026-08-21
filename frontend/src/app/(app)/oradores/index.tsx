@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Dropdown } from 'react-native-element-dropdown';
+import { Dropdown, type IDropdownRef } from 'react-native-element-dropdown';
 import { router } from 'expo-router';
 
 import { useAuth } from '@/features/administracao/use-auth';
@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth } from '@/constants/theme';
 import { useOradores } from '@/features/oradores/use-oradores';
 import { useTemas } from '@/features/catalogo/use-temas';
+import { DropdownSearchInput, encontrarPrimeiraCorrespondencia } from '@/components/dropdown-search-input';
 
 const PODE_GERENCIAR = ['Coordenador', 'Editor', 'Administrador Global'];
 
@@ -38,6 +39,7 @@ export default function OradoresListaScreen() {
   const { status, oradores } = useOradores();
   const { temas } = useTemas();
 
+  const temaFiltroRef = useRef<IDropdownRef>(null);
   const [busca, setBusca] = useState('');
   const [temaFiltroId, setTemaFiltroId] = useState<string | null>(null);
   const [temaFiltroBusca, setTemaFiltroBusca] = useState('');
@@ -66,6 +68,12 @@ export default function OradoresListaScreen() {
     () => ordenarTemasPorRelevancia(temas, temaFiltroBusca),
     [temas, temaFiltroBusca]
   );
+
+  const temaFiltroDados = [{ id: '', label: 'Todos os temas' }, ...temaOpcoes.map((t) => ({ id: t.id, label: `${t.numero}. ${t.titulo}` }))];
+
+  function selecionarTemaFiltro(item: { id: string; label: string }) {
+    setTemaFiltroId(item.id || null);
+  }
 
   if (status === 'loading') {
     return (
@@ -99,6 +107,7 @@ export default function OradoresListaScreen() {
           />
 
           <Dropdown
+            ref={temaFiltroRef}
             style={dropdownStyle}
             containerStyle={{ backgroundColor: colors.background }}
             placeholderStyle={{ color: colors.textSecondary }}
@@ -106,7 +115,7 @@ export default function OradoresListaScreen() {
             itemTextStyle={{ color: colors.text }}
             inputSearchStyle={{ color: colors.text }}
             activeColor={colors.backgroundSelected}
-            data={[{ id: '', label: 'Todos os temas' }, ...temaOpcoes.map((t) => ({ id: t.id, label: `${t.numero}. ${t.titulo}` }))]}
+            data={temaFiltroDados}
             labelField="label"
             valueField="id"
             value={temaFiltroId ?? ''}
@@ -115,7 +124,26 @@ export default function OradoresListaScreen() {
             searchQuery={buscarTemaPorNumeroExato}
             searchPlaceholder="Buscar tema..."
             onChangeText={setTemaFiltroBusca}
-            onChange={(item) => setTemaFiltroId(item.id || null)}
+            onChange={selecionarTemaFiltro}
+            renderInputSearch={(onSearch) => (
+              <DropdownSearchInput
+                value={temaFiltroBusca}
+                onChangeText={onSearch}
+                onSubmitPrimeiraCorrespondencia={() => {
+                  const primeiro = encontrarPrimeiraCorrespondencia(
+                    temaFiltroDados,
+                    'label',
+                    temaFiltroBusca,
+                    buscarTemaPorNumeroExato
+                  );
+                  if (primeiro) selecionarTemaFiltro(primeiro);
+                  temaFiltroRef.current?.close();
+                }}
+                placeholder="Buscar tema..."
+                placeholderTextColor={colors.textSecondary}
+                color={colors.text}
+              />
+            )}
           />
 
           {oradoresFiltrados.map((o) => (

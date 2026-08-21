@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text } from 'react-native';
-import { Dropdown } from 'react-native-element-dropdown';
+import { Dropdown, type IDropdownRef } from 'react-native-element-dropdown';
 
+import { DropdownSearchInput, encontrarPrimeiraCorrespondencia } from '@/components/dropdown-search-input';
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
@@ -30,8 +31,11 @@ export function EstadoCidadePicker({
   onErro,
 }: EstadoCidadePickerProps) {
   const colors = useTheme();
+  const estadoRef = useRef<IDropdownRef>(null);
+  const cidadeRef = useRef<IDropdownRef>(null);
   const [estados, setEstados] = useState<Estado[]>([]);
   const [cidades, setCidades] = useState<CidadeOpcao[]>([]);
+  const [estadoBusca, setEstadoBusca] = useState('');
   const [cidadeBusca, setCidadeBusca] = useState('');
   const [criandoCidade, setCriandoCidade] = useState(false);
 
@@ -75,6 +79,21 @@ export function EstadoCidadePicker({
     };
   }, [estadoId]);
 
+  const estadoOpcoes = estados.map((e) => ({ id: e.id, label: `${e.nome} (${e.uf})` }));
+  const cidadeOpcoes = cidades.map((c) => ({ id: c.id, label: c.nome }));
+
+  function selecionarEstado(item: { id: string; label: string }) {
+    onEstadoChange(item.id);
+    onCidadeChange('');
+    setCidadeBusca('');
+    setCidades([]);
+  }
+
+  function selecionarCidade(item: { id: string; label: string }) {
+    onCidadeChange(item.id);
+    setCidadeBusca('');
+  }
+
   const cidadeEncontrada = cidades.some((c) => normalizar(c.nome) === normalizar(cidadeBusca));
   const mostrarCriarCidade = !!estadoId && cidadeBusca.trim().length > 0 && !cidadeEncontrada;
 
@@ -101,6 +120,7 @@ export function EstadoCidadePicker({
   return (
     <>
       <Dropdown
+        ref={estadoRef}
         style={dropdownStyle}
         containerStyle={{ backgroundColor: colors.background }}
         placeholderStyle={{ color: colors.textSecondary }}
@@ -108,22 +128,33 @@ export function EstadoCidadePicker({
         itemTextStyle={{ color: colors.text }}
         inputSearchStyle={{ color: colors.text }}
         activeColor={colors.backgroundSelected}
-        data={estados.map((e) => ({ id: e.id, label: `${e.nome} (${e.uf})` }))}
+        data={estadoOpcoes}
         labelField="label"
         valueField="id"
         value={estadoId}
         placeholder="Selecionar Estado"
         search
         searchPlaceholder="Buscar Estado..."
-        onChange={(item) => {
-          onEstadoChange(item.id);
-          onCidadeChange('');
-          setCidadeBusca('');
-          setCidades([]);
-        }}
+        onChangeText={setEstadoBusca}
+        onChange={selecionarEstado}
+        renderInputSearch={(onSearch) => (
+          <DropdownSearchInput
+            value={estadoBusca}
+            onChangeText={onSearch}
+            onSubmitPrimeiraCorrespondencia={() => {
+              const primeiro = encontrarPrimeiraCorrespondencia(estadoOpcoes, 'label', estadoBusca);
+              if (primeiro) selecionarEstado(primeiro);
+              estadoRef.current?.close();
+            }}
+            placeholder="Buscar Estado..."
+            placeholderTextColor={colors.textSecondary}
+            color={colors.text}
+          />
+        )}
       />
 
       <Dropdown
+        ref={cidadeRef}
         style={dropdownStyle}
         containerStyle={{ backgroundColor: colors.background }}
         placeholderStyle={{ color: colors.textSecondary }}
@@ -132,7 +163,7 @@ export function EstadoCidadePicker({
         inputSearchStyle={{ color: colors.text }}
         activeColor={colors.backgroundSelected}
         disable={!estadoId}
-        data={cidades.map((c) => ({ id: c.id, label: c.nome }))}
+        data={cidadeOpcoes}
         labelField="label"
         valueField="id"
         value={cidadeId}
@@ -140,10 +171,21 @@ export function EstadoCidadePicker({
         search
         searchPlaceholder="Buscar Cidade..."
         onChangeText={setCidadeBusca}
-        onChange={(item) => {
-          onCidadeChange(item.id);
-          setCidadeBusca('');
-        }}
+        onChange={selecionarCidade}
+        renderInputSearch={(onSearch) => (
+          <DropdownSearchInput
+            value={cidadeBusca}
+            onChangeText={onSearch}
+            onSubmitPrimeiraCorrespondencia={() => {
+              const primeiro = encontrarPrimeiraCorrespondencia(cidadeOpcoes, 'label', cidadeBusca);
+              if (primeiro) selecionarCidade(primeiro);
+              cidadeRef.current?.close();
+            }}
+            placeholder="Buscar Cidade..."
+            placeholderTextColor={colors.textSecondary}
+            color={colors.text}
+          />
+        )}
       />
 
       {mostrarCriarCidade ? (

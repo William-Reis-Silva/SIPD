@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Dropdown } from 'react-native-element-dropdown';
+import { Dropdown, type IDropdownRef } from 'react-native-element-dropdown';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { useAuth } from '@/features/administracao/use-auth';
@@ -14,6 +14,7 @@ import { useHistoricoOrador } from '@/features/oradores/use-historico-orador';
 import { useTemas } from '@/features/catalogo/use-temas';
 import { normalizarTelefone, formatarTelefone } from '@/features/oradores/telefone';
 import { EstadoCidadePicker } from '@/features/congregacoes/estado-cidade-picker';
+import { DropdownSearchInput, encontrarPrimeiraCorrespondencia } from '@/components/dropdown-search-input';
 
 type CongregacaoOpcao = { id: string; nome: string; numero: string };
 
@@ -133,7 +134,9 @@ function SecaoDados({
   const [estadoId, setEstadoId] = useState(orador.cidade.estado_id);
   const [cidadeId, setCidadeId] = useState(orador.cidade_id);
   const [congregacaoOrigemId, setCongregacaoOrigemId] = useState(orador.congregacao_origem_id);
+  const congregacaoRef = useRef<IDropdownRef>(null);
   const [congregacoes, setCongregacoes] = useState<CongregacaoOpcao[]>([]);
+  const [congregacaoBusca, setCongregacaoBusca] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -202,6 +205,12 @@ function SecaoDados({
     }
 
     setEditando(false);
+  }
+
+  const congregacaoOpcoes = congregacoes.map((c) => ({ id: c.id, label: `${c.nome} (${c.numero})` }));
+
+  function selecionarCongregacao(item: { id: string; label: string }) {
+    setCongregacaoOrigemId(item.id);
   }
 
   if (!editando) {
@@ -281,6 +290,7 @@ function SecaoDados({
       />
 
       <Dropdown
+        ref={congregacaoRef}
         style={dropdownStyle}
         containerStyle={{ backgroundColor: colors.background }}
         placeholderStyle={{ color: colors.textSecondary }}
@@ -288,14 +298,29 @@ function SecaoDados({
         itemTextStyle={{ color: colors.text }}
         inputSearchStyle={{ color: colors.text }}
         activeColor={colors.backgroundSelected}
-        data={congregacoes.map((c) => ({ id: c.id, label: `${c.nome} (${c.numero})` }))}
+        data={congregacaoOpcoes}
         labelField="label"
         valueField="id"
         value={congregacaoOrigemId}
         placeholder="Congregação de origem"
         search
         searchPlaceholder="Buscar congregação..."
-        onChange={(item) => setCongregacaoOrigemId(item.id)}
+        onChangeText={setCongregacaoBusca}
+        onChange={selecionarCongregacao}
+        renderInputSearch={(onSearch) => (
+          <DropdownSearchInput
+            value={congregacaoBusca}
+            onChangeText={onSearch}
+            onSubmitPrimeiraCorrespondencia={() => {
+              const primeiro = encontrarPrimeiraCorrespondencia(congregacaoOpcoes, 'label', congregacaoBusca);
+              if (primeiro) selecionarCongregacao(primeiro);
+              congregacaoRef.current?.close();
+            }}
+            placeholder="Buscar congregação..."
+            placeholderTextColor={colors.textSecondary}
+            color={colors.text}
+          />
+        )}
       />
 
       {erro ? <Text className="text-sm text-red-600 dark:text-red-400">{erro}</Text> : null}
@@ -330,6 +355,7 @@ function SecaoTemasPreparados({
     useTemasPreparados(oradorId);
   const { temas } = useTemas();
 
+  const temaParaAdicionarRef = useRef<IDropdownRef>(null);
   const [temaParaAdicionar, setTemaParaAdicionar] = useState('');
   const [temaParaAdicionarBusca, setTemaParaAdicionarBusca] = useState('');
   const [erro, setErro] = useState<string | null>(null);
@@ -349,6 +375,12 @@ function SecaoTemasPreparados({
     const disponiveis = temas.filter((t) => t.ativo && !jaAdicionados.has(t.id));
     return ordenarTemasPorRelevancia(disponiveis, temaParaAdicionarBusca);
   }, [temas, temasPreparados, temaParaAdicionarBusca]);
+
+  const temaParaAdicionarOpcoes = temasDisponiveis.map((t) => ({ id: t.id, label: `${t.numero}. ${t.titulo}` }));
+
+  function selecionarTemaParaAdicionar(item: { id: string; label: string }) {
+    setTemaParaAdicionar(item.id);
+  }
 
   async function handleAdicionar() {
     setErro(null);
@@ -427,6 +459,7 @@ function SecaoTemasPreparados({
       {podeGerenciar ? (
         <View className="mt-2 gap-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
           <Dropdown
+            ref={temaParaAdicionarRef}
             style={dropdownStyle}
             containerStyle={{ backgroundColor: colors.background }}
             placeholderStyle={{ color: colors.textSecondary }}
@@ -434,7 +467,7 @@ function SecaoTemasPreparados({
             itemTextStyle={{ color: colors.text }}
             inputSearchStyle={{ color: colors.text }}
             activeColor={colors.backgroundSelected}
-            data={temasDisponiveis.map((t) => ({ id: t.id, label: `${t.numero}. ${t.titulo}` }))}
+            data={temaParaAdicionarOpcoes}
             labelField="label"
             valueField="id"
             value={temaParaAdicionar}
@@ -443,7 +476,26 @@ function SecaoTemasPreparados({
             searchQuery={buscarTemaPorNumeroExato}
             searchPlaceholder="Buscar tema..."
             onChangeText={setTemaParaAdicionarBusca}
-            onChange={(item) => setTemaParaAdicionar(item.id)}
+            onChange={selecionarTemaParaAdicionar}
+            renderInputSearch={(onSearch) => (
+              <DropdownSearchInput
+                value={temaParaAdicionarBusca}
+                onChangeText={onSearch}
+                onSubmitPrimeiraCorrespondencia={() => {
+                  const primeiro = encontrarPrimeiraCorrespondencia(
+                    temaParaAdicionarOpcoes,
+                    'label',
+                    temaParaAdicionarBusca,
+                    buscarTemaPorNumeroExato
+                  );
+                  if (primeiro) selecionarTemaParaAdicionar(primeiro);
+                  temaParaAdicionarRef.current?.close();
+                }}
+                placeholder="Buscar tema..."
+                placeholderTextColor={colors.textSecondary}
+                color={colors.text}
+              />
+            )}
           />
           <Pressable
             onPress={handleAdicionar}

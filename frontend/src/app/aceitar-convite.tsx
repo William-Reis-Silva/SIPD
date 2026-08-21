@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
@@ -11,6 +11,10 @@ export default function AceitarConviteScreen() {
   const { status, usuario, aceitarConvite } = useAuth();
   const params = useLocalSearchParams<{ codigo?: string }>();
   const router = useRouter();
+
+  const nomeRef = useRef<TextInput>(null);
+  const sobrenomeRef = useRef<TextInput>(null);
+  const telefoneRef = useRef<TextInput>(null);
 
   const [codigo, setCodigo] = useState('');
   const [nome, setNome] = useState('');
@@ -86,25 +90,39 @@ export default function AceitarConviteScreen() {
           onChangeText={(texto) => setCodigo(texto.toUpperCase())}
           placeholder="Código do convite"
           autoCapitalize="characters"
+          returnKeyType="next"
+          onSubmitEditing={() => nomeRef.current?.focus()}
+          blurOnSubmit={false}
           className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
         />
         <TextInput
+          ref={nomeRef}
           value={nome}
           onChangeText={setNome}
           placeholder="Nome"
+          returnKeyType="next"
+          onSubmitEditing={() => sobrenomeRef.current?.focus()}
+          blurOnSubmit={false}
           className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
         />
         <TextInput
+          ref={sobrenomeRef}
           value={sobrenome}
           onChangeText={setSobrenome}
           placeholder="Sobrenome"
+          returnKeyType="next"
+          onSubmitEditing={() => telefoneRef.current?.focus()}
+          blurOnSubmit={false}
           className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
         />
         <TextInput
+          ref={telefoneRef}
           value={telefone}
           onChangeText={setTelefone}
           placeholder="Telefone"
           keyboardType="phone-pad"
+          returnKeyType="done"
+          onSubmitEditing={handleSubmit}
           className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
         />
 

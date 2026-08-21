@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
@@ -11,6 +11,7 @@ function isEmailValido(email: string) {
 
 export default function SignupScreen() {
   const { signUp } = useAuth();
+  const senhaRef = useRef<TextInput>(null);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
@@ -58,15 +59,21 @@ export default function SignupScreen() {
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
+          returnKeyType="next"
+          onSubmitEditing={() => senhaRef.current?.focus()}
+          blurOnSubmit={false}
           className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
         />
 
         <TextInput
+          ref={senhaRef}
           value={senha}
           onChangeText={setSenha}
           placeholder="Senha"
           secureTextEntry
           autoComplete="password"
+          returnKeyType="done"
+          onSubmitEditing={handleSubmit}
           className="rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 dark:border-neutral-600 dark:text-white"
         />
 
