@@ -10,6 +10,7 @@ import { MaxContentWidth } from '@/constants/theme';
 import { useOradores } from '@/features/oradores/use-oradores';
 import { useTemas } from '@/features/catalogo/use-temas';
 import { DropdownSearchInput, encontrarPrimeiraCorrespondencia } from '@/components/dropdown-search-input';
+import { DropdownHoverItem } from '@/components/dropdown-hover-item';
 
 const PODE_GERENCIAR = ['Coordenador', 'Editor', 'Administrador Global'];
 
@@ -125,6 +126,7 @@ export default function OradoresListaScreen() {
             searchPlaceholder="Buscar tema..."
             onChangeText={setTemaFiltroBusca}
             onChange={selecionarTemaFiltro}
+            renderItem={(item) => <DropdownHoverItem label={item.label} textColor={colors.text} />}
             renderInputSearch={(onSearch) => (
               <DropdownSearchInput
                 value={temaFiltroBusca}
@@ -150,7 +152,7 @@ export default function OradoresListaScreen() {
             <Pressable
               key={o.id}
               onPress={() => router.push(`/oradores/${o.id}`)}
-              className="gap-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
+              className="gap-2 rounded-xl border border-neutral-200 p-4 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800">
               <Text className="text-base font-medium text-neutral-900 dark:text-white">
                 {o.nome} {o.sobrenome}
               </Text>

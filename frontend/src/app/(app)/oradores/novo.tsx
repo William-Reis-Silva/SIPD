@@ -11,6 +11,7 @@ import { useOradores } from '@/features/oradores/use-oradores';
 import { normalizarTelefone } from '@/features/oradores/telefone';
 import { EstadoCidadePicker } from '@/features/congregacoes/estado-cidade-picker';
 import { DropdownSearchInput, encontrarPrimeiraCorrespondencia } from '@/components/dropdown-search-input';
+import { DropdownHoverItem } from '@/components/dropdown-hover-item';
 
 type CongregacaoOpcao = { id: string; nome: string; numero: string };
 
@@ -159,6 +160,7 @@ export default function NovoOradorScreen() {
             searchPlaceholder="Buscar congregação..."
             onChangeText={setCongregacaoBusca}
             onChange={selecionarCongregacao}
+            renderItem={(item) => <DropdownHoverItem label={item.label} textColor={colors.text} />}
             renderInputSearch={(onSearch) => (
               <DropdownSearchInput
                 value={congregacaoBusca}

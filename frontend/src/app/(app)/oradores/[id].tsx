@@ -15,6 +15,7 @@ import { useTemas } from '@/features/catalogo/use-temas';
 import { normalizarTelefone, formatarTelefone } from '@/features/oradores/telefone';
 import { EstadoCidadePicker } from '@/features/congregacoes/estado-cidade-picker';
 import { DropdownSearchInput, encontrarPrimeiraCorrespondencia } from '@/components/dropdown-search-input';
+import { DropdownHoverItem } from '@/components/dropdown-hover-item';
 
 type CongregacaoOpcao = { id: string; nome: string; numero: string };
 
@@ -307,6 +308,7 @@ function SecaoDados({
         searchPlaceholder="Buscar congregação..."
         onChangeText={setCongregacaoBusca}
         onChange={selecionarCongregacao}
+        renderItem={(item) => <DropdownHoverItem label={item.label} textColor={colors.text} />}
         renderInputSearch={(onSearch) => (
           <DropdownSearchInput
             value={congregacaoBusca}
@@ -477,6 +479,7 @@ function SecaoTemasPreparados({
             searchPlaceholder="Buscar tema..."
             onChangeText={setTemaParaAdicionarBusca}
             onChange={selecionarTemaParaAdicionar}
+            renderItem={(item) => <DropdownHoverItem label={item.label} textColor={colors.text} />}
             renderInputSearch={(onSearch) => (
               <DropdownSearchInput
                 value={temaParaAdicionarBusca}
