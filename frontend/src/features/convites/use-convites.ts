@@ -28,6 +28,7 @@ export type Convite = {
   criado_por: string;
   convite_datas: { id: string; data: string }[];
   confirmacoes: ConfirmacaoConvite[];
+  programacao: { data: string; tema: { numero: string; titulo: string } } | null;
 };
 
 export type ConvitesStatus = 'loading' | 'ready' | 'error';
@@ -35,7 +36,8 @@ export type ConvitesStatus = 'loading' | 'ready' | 'error';
 const CONVITES_SELECT =
   'id, congregacao_id, orador_id, orador:oradores(id, nome, sobrenome), programacao_id, status, token, ' +
   'expira_em, enviado_em, respondido_em, cancelado_em, criado_por, convite_datas(id, data), ' +
-  'confirmacoes(id, cantico_inicial, utilizara_imagens, permanecera_ate_final, observacoes, anexos, enviada_em)';
+  'confirmacoes(id, cantico_inicial, utilizara_imagens, permanecera_ate_final, observacoes, anexos, enviada_em), ' +
+  'programacao:programacoes(data, tema:temas(numero, titulo))';
 
 const ERRO_SALVAR = 'Não foi possível salvar. Tente novamente.';
 const ERRO_SEM_DATAS = 'Selecione ao menos uma data candidata.';

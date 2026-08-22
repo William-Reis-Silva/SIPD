@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 
@@ -8,6 +8,7 @@ import { MaxContentWidth } from '@/constants/theme';
 import { useConvites, type Convite } from '@/features/convites/use-convites';
 import { useHistoricoConvite } from '@/features/convites/use-historico-convite';
 import { formatarDataIso } from '@/components/calendario-mensal';
+import { supabase } from '@/lib/supabase';
 
 const PODE_GERENCIAR = ['Coordenador', 'Editor', 'Administrador Global'];
 
@@ -148,6 +149,16 @@ function SecaoDados({
     if (error) setErro(error);
   }
 
+  async function handleAbrirAnexo(caminho: string) {
+    setErro(null);
+    const { data, error } = await supabase.storage.from('convite-anexos').createSignedUrl(caminho, 300);
+    if (error || !data?.signedUrl) {
+      setErro('Não foi possível abrir o anexo.');
+      return;
+    }
+    Linking.openURL(data.signedUrl);
+  }
+
   return (
     <View className="gap-4">
       <View className="gap-4 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
@@ -164,6 +175,15 @@ function SecaoDados({
             {convite.convite_datas.map((d) => formatarDataIso(d.data)).join(', ')}
           </Text>
         </View>
+        {convite.programacao ? (
+          <View>
+            <Text className="text-xs text-neutral-500 dark:text-neutral-400">Data e tema confirmados</Text>
+            <Text className="text-base text-neutral-900 dark:text-white">
+              {formatarDataIso(convite.programacao.data)} · {convite.programacao.tema.numero}.{' '}
+              {convite.programacao.tema.titulo}
+            </Text>
+          </View>
+        ) : null}
         <View>
           <Text className="text-xs text-neutral-500 dark:text-neutral-400">Link de resposta</Text>
           <Text className="text-sm text-neutral-900 dark:text-white" selectable>
@@ -208,9 +228,11 @@ function SecaoDados({
             <View>
               <Text className="text-xs text-neutral-500 dark:text-neutral-400">Anexos</Text>
               {confirmacao.anexos.map((anexo) => (
-                <Text key={anexo.caminho} className="text-sm text-neutral-900 dark:text-white">
-                  {anexo.nome_arquivo}
-                </Text>
+                <Pressable key={anexo.caminho} onPress={() => handleAbrirAnexo(anexo.caminho)}>
+                  <Text className="text-sm font-medium text-neutral-900 underline dark:text-white">
+                    {anexo.nome_arquivo}
+                  </Text>
+                </Pressable>
               ))}
             </View>
           ) : null}

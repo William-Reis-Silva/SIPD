@@ -188,9 +188,14 @@ function Fase2({
   const [enviando, setEnviando] = useState(false);
 
   async function handleAnexar(arquivos: File[]) {
+    setErro(null);
     for (const arquivo of arquivos) {
       const { error, caminho } = await uploadAnexo(arquivo);
-      if (!error && caminho) setAnexos((atual) => [...atual, { caminho, nome_arquivo: arquivo.name }]);
+      if (error || !caminho) {
+        setErro('Não foi possível enviar um dos arquivos. Tente novamente.');
+        continue;
+      }
+      setAnexos((atual) => [...atual, { caminho, nome_arquivo: arquivo.name }]);
     }
   }
 
