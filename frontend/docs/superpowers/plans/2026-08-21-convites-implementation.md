@@ -1049,7 +1049,7 @@ git commit -m "feat(convites): componente AnexoUpload para a confirmacao publica
 - Create: `frontend/src/app/(app)/convites/novo.tsx`
 
 **Interfaces:**
-- Consumes: `useAuth()`, `useTheme()`, `useOradores()` (`oradores`), `useConvites()` (`criarConvite`), `CalendarioMensal`/`formatarDataIso` de `@/components/calendario-mensal` (modo `diasSelecionados`, Task 2), `DropdownSearchInput`/`encontrarPrimeiraCorrespondencia`, `DropdownHoverItem`, `supabase` (para listar congregações quando Administrador Global).
+- Consumes: `useAuth()`, `useTheme()`, `useOradores()` (`oradores`), `useConvites()` (`criarConvite`), `CalendarioMensal`/`formatarDataIso` de `@/components/calendario-mensal` (modo `diasSelecionados`, Task 2), `DropdownSearchInput`/`encontrarPrimeiraCorrespondencia`, `DropdownHoverItem`.
 - Produces: tela acessível em `/convites/novo`. Task 7 navega para cá via `router.push('/convites/novo')`.
 
 - [ ] **Step 1: Criar o layout da seção**
@@ -1066,10 +1066,10 @@ export default function ConvitesLayout() {
 
 - [ ] **Step 2: Criar a tela `novo.tsx`**
 
-Crie `frontend/src/app/(app)/convites/novo.tsx`:
+Crie `frontend/src/app/(app)/convites/novo.tsx`. Diferente de Programações, aqui não há seletor de congregação para Administrador Global — Convite é sempre criado para a própria congregação de quem está logado (confirmado com o usuário: AG não cria convites para outras congregações nesta fatia):
 
 ```tsx
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Dropdown, type IDropdownRef } from 'react-native-element-dropdown';
@@ -1078,7 +1078,6 @@ import { router } from 'expo-router';
 import { useAuth } from '@/features/administracao/use-auth';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
 import { useOradores } from '@/features/oradores/use-oradores';
 import { useConvites } from '@/features/convites/use-convites';
 import { CalendarioMensal, formatarDataIso } from '@/components/calendario-mensal';
@@ -1087,23 +1086,15 @@ import { DropdownHoverItem } from '@/components/dropdown-hover-item';
 
 const ERRO_CAMPOS = 'Selecione um orador e ao menos uma data candidata.';
 
-type CongregacaoOpcao = { id: string; nome: string; numero: string };
-
 export default function NovoConviteScreen() {
   const { usuario } = useAuth();
   const colors = useTheme();
   const { oradores } = useOradores();
   const { criarConvite } = useConvites();
 
-  const ehAdministradorGlobal = usuario?.perfil.nome === 'Administrador Global';
-
   const oradorRef = useRef<IDropdownRef>(null);
-  const congregacaoRef = useRef<IDropdownRef>(null);
   const [oradorId, setOradorId] = useState('');
   const [oradorBusca, setOradorBusca] = useState('');
-  const [congregacoes, setCongregacoes] = useState<CongregacaoOpcao[]>([]);
-  const [congregacaoId, setCongregacaoId] = useState(ehAdministradorGlobal ? '' : (usuario?.congregacao_id ?? ''));
-  const [congregacaoBusca, setCongregacaoBusca] = useState('');
   const [diasSelecionados, setDiasSelecionados] = useState<Set<string>>(new Set());
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -1111,21 +1102,6 @@ export default function NovoConviteScreen() {
   const hoje = new Date();
   const [anoCalendario, setAnoCalendario] = useState(hoje.getFullYear());
   const [mesCalendario, setMesCalendario] = useState(hoje.getMonth());
-
-  useEffect(() => {
-    if (!ehAdministradorGlobal) return;
-    let ignorar = false;
-    supabase
-      .from('congregacoes')
-      .select('id, nome, numero')
-      .order('nome')
-      .then(({ data }) => {
-        if (!ignorar) setCongregacoes((data ?? []) as CongregacaoOpcao[]);
-      });
-    return () => {
-      ignorar = true;
-    };
-  }, [ehAdministradorGlobal]);
 
   const dropdownStyle = {
     height: 50,
@@ -1136,7 +1112,6 @@ export default function NovoConviteScreen() {
   };
 
   const oradorOpcoes = oradores.filter((o) => o.ativo).map((o) => ({ id: o.id, label: `${o.nome} ${o.sobrenome}` }));
-  const congregacaoOpcoes = congregacoes.map((c) => ({ id: c.id, label: `${c.nome} (${c.numero})` }));
 
   function alternarData(dataIso: string) {
     setDiasSelecionados((atual) => {
@@ -1149,15 +1124,16 @@ export default function NovoConviteScreen() {
 
   async function handleSalvar() {
     setErro(null);
-    if (!oradorId || !congregacaoId || diasSelecionados.size === 0) {
+    if (!oradorId || diasSelecionados.size === 0) {
       setErro(ERRO_CAMPOS);
       return;
     }
+    if (!usuario) return;
 
     setSalvando(true);
     const { error, convite } = await criarConvite({
       oradorId,
-      congregacaoId,
+      congregacaoId: usuario.congregacao_id,
       datas: Array.from(diasSelecionados),
     });
     setSalvando(false);
@@ -1178,43 +1154,6 @@ export default function NovoConviteScreen() {
           </Pressable>
 
           <Text className="text-2xl font-bold text-neutral-900 dark:text-white">Novo Convite</Text>
-
-          {ehAdministradorGlobal ? (
-            <Dropdown
-              ref={congregacaoRef}
-              style={dropdownStyle}
-              containerStyle={{ backgroundColor: colors.background }}
-              placeholderStyle={{ color: colors.textSecondary }}
-              selectedTextStyle={{ color: colors.text }}
-              itemTextStyle={{ color: colors.text }}
-              inputSearchStyle={{ color: colors.text }}
-              activeColor={colors.backgroundSelected}
-              data={congregacaoOpcoes}
-              labelField="label"
-              valueField="id"
-              value={congregacaoId}
-              placeholder="Selecionar congregação"
-              search
-              searchPlaceholder="Buscar congregação..."
-              onChangeText={setCongregacaoBusca}
-              onChange={(item) => setCongregacaoId(item.id)}
-              renderItem={(item) => <DropdownHoverItem label={item.label} textColor={colors.text} />}
-              renderInputSearch={(onSearch) => (
-                <DropdownSearchInput
-                  value={congregacaoBusca}
-                  onChangeText={onSearch}
-                  onSubmitPrimeiraCorrespondencia={() => {
-                    const primeiro = encontrarPrimeiraCorrespondencia(congregacaoOpcoes, 'label', congregacaoBusca);
-                    if (primeiro) setCongregacaoId(primeiro.id);
-                    congregacaoRef.current?.close();
-                  }}
-                  placeholder="Buscar congregação..."
-                  placeholderTextColor={colors.textSecondary}
-                  color={colors.text}
-                />
-              )}
-            />
-          ) : null}
 
           <Dropdown
             ref={oradorRef}
