@@ -36,6 +36,11 @@ function RootNavigator() {
           'authenticated', e um convite de conta nova por alguém em
           'onboarding' ou 'unauthenticated'. */}
       <Stack.Screen name="aceitar-convite" />
+      {/* Também sempre alcançável — o Orador que responde a um Convite
+          nunca tem sessão (link público com token, ver ADR-011). Precisa
+          ficar fora de todo Stack.Protected para ser acessível em
+          qualquer AuthStatus, igual a aceitar-convite. */}
+      <Stack.Screen name="convite/[token]" />
     </Stack>
   );
 }

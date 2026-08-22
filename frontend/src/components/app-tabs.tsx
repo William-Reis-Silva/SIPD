@@ -30,6 +30,9 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="programacoes">
         <NativeTabs.Trigger.Label>Programações</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="convites">
+        <NativeTabs.Trigger.Label>Convites</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="suporte">
         <NativeTabs.Trigger.Label>Suporte</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
