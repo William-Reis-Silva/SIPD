@@ -35,3 +35,6 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# reference material with personal data (phone/email screenshots), not for commit
+exemplos/
