@@ -13,6 +13,7 @@ export type CalendarioMensalProps = {
   mes: number;
   diasComEvento?: Set<string>;
   diaSelecionado?: string | null;
+  diasSelecionados?: Set<string>;
   onSelecionarDia: (dataIso: string) => void;
   onMudarMes: (ano: number, mes: number) => void;
 };
@@ -48,6 +49,7 @@ export function CalendarioMensal({
   mes,
   diasComEvento,
   diaSelecionado,
+  diasSelecionados,
   onSelecionarDia,
   onMudarMes,
 }: CalendarioMensalProps) {
@@ -93,7 +95,7 @@ export function CalendarioMensal({
 
             const dataIso = paraIso(ano, mes, dia);
             const temEvento = diasComEvento?.has(dataIso) ?? false;
-            const selecionado = diaSelecionado === dataIso;
+            const selecionado = diasSelecionados ? diasSelecionados.has(dataIso) : diaSelecionado === dataIso;
 
             return (
               <Pressable
