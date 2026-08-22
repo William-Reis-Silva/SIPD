@@ -276,6 +276,31 @@ UC-CGR-003 usa um mecanismo de convite por **código/link gerado e compartilhado
 
 ---
 
+## ADR-011 — Convite de Orador respondido por link público com token, sem autenticação
+
+**Status:** Aceita
+
+**Contexto**
+
+`06.1.6 - Convites.md` (UC-CONV-005/006/007) assume que o Orador responde ao convite autenticado, via conta vinculada (RN-035/036, UC-ORA-007 "Vincular Conta ao Orador"). Essa vinculação nunca foi implementada — não há RPC, nem UI, nem portal autenticado para um Orador puro (que, por decisão de arquitetura, nunca tem `Perfil`). O mecanismo real já usado manualmente pelas congregações (WhatsApp com datas em aberto + Google Forms) não exige login.
+
+**Decisão**
+
+O Orador responde ao convite por um **link público com token** (`/convite/{token}`, UUID de alta entropia), sem sessão autenticada. As RPCs de resposta (`consultar_convite_publico`, `responder_convite_publico`, `enviar_confirmacao_convite_publico`) são `security definer` e concedidas ao papel `anon` — a identidade do respondente é a posse do token da URL, não uma conta.
+
+**Alternativas consideradas**
+
+- Construir UC-ORA-007 (Vincular Conta ao Orador) e um portal autenticado para o Orador antes desta fatia — descartada por ampliar significativamente o escopo sem necessidade: o fluxo manual que este módulo substitui (WhatsApp + Google Forms) já opera sem login, então autenticação não é um requisito real do problema, só uma suposição da especificação original.
+
+**Consequências**
+
+- Positivo: nenhuma dependência de UC-ORA-007; o Orador responde no mesmo nível de fricção do fluxo manual que está sendo substituído.
+- Positivo: mesmo padrão `security definer` já usado no projeto, sem Edge Functions.
+- Negativo: diverge de ADR-010, que optou pelo oposto (exigir sessão autenticada) para o convite de usuário da congregação (`convites_usuario`) — há inclusive uma migração (`20260818012300`) revogando acesso `anon` naquele fluxo. A distinção é deliberada: `convites_usuario` concede acesso a dados internos da congregação (exige identidade verificável), enquanto o Convite de Orador só expõe dados do próprio convite, protegidos pela posse de um token de alta entropia.
+- Negativo: sem confirmação automática de identidade do Orador — mitigado pelo token UUID (não adivinhável) e pela validade de 7 dias.
+
+---
+
 # Considerações Finais
 
 Este registro cobre as decisões arquiteturais e de produto já refletidas na documentação existente até a data de sua elaboração. Ele não substitui `10-Arquitetura.md` (que descreve a arquitetura de forma corrente) nem `STATUS.md` (que registra o histórico de correções de consistência) — complementa ambos, preservando especificamente o raciocínio por trás de cada decisão estrutural.

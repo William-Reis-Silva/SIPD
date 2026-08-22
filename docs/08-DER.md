@@ -351,19 +351,23 @@ UNIQUE (congregacao_id, data)
 
 ## 11. Convites
 
-Representa um convite enviado a um Orador para determinada Programação.
+Representa um convite enviado a um Orador, oferecendo datas candidatas de uma Congregação. Não depende de uma Programação pré-existente — a Programação só é criada quando o Orador aceita.
 
 **Tabela:** `convites`
 
 | Coluna | Tipo | Regra |
 |--------|------|-------|
 | id | UUID | PK |
-| programacao_id | UUID | FK → programacoes |
+| congregacao_id | UUID | FK → congregacoes |
+| programacao_id | UUID | FK → programacoes, nulo até o Orador aceitar |
 | orador_id | UUID | FK → oradores |
 | status | VARCHAR | Estado do convite |
+| token | UUID | Identifica o link público de resposta (`/convite/{token}`) |
+| expira_em | TIMESTAMP | Validade do link (7 dias da criação, renovada ao reenviar) |
 | enviado_em | TIMESTAMP | Data do envio |
 | respondido_em | TIMESTAMP | Data da resposta |
 | cancelado_em | TIMESTAMP | Data do cancelamento |
+| criado_por | UUID | FK → usuarios, quem criou o convite |
 | criado_em | TIMESTAMP | Data de criação |
 | atualizado_em | TIMESTAMP | Última alteração |
 
@@ -375,6 +379,27 @@ Representa um convite enviado a um Orador para determinada Programação.
 - Recusado
 - Cancelado
 - Expirado
+
+---
+
+## 11.1 Datas Candidatas do Convite
+
+Representa uma data oferecida ao Orador dentro de um Convite. Uma data não pode ser oferecida por dois convites simultaneamente abertos (`Criado`/`Enviado`) da mesma congregação.
+
+**Tabela:** `convite_datas`
+
+| Coluna | Tipo | Regra |
+|--------|------|-------|
+| id | UUID | PK |
+| convite_id | UUID | FK → convites |
+| data | DATE | Data candidata |
+| criado_em | TIMESTAMP | Data de criação |
+
+### Restrição
+
+```text
+UNIQUE (convite_id, data)
+```
 
 ---
 
@@ -392,6 +417,7 @@ Representa a confirmação enviada pelo Orador após aceitar um convite.
 | utilizara_imagens | BOOLEAN | Utilização de imagens |
 | permanecera_ate_final | BOOLEAN | Confirmação de permanência |
 | observacoes | TEXT | Observações |
+| anexos | JSONB | Lista de arquivos anexados (`[{ "caminho", "nome_arquivo" }]`) |
 | enviada_em | TIMESTAMP | Data do envio |
 | atualizada_em | TIMESTAMP | Última alteração |
 
