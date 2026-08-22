@@ -183,6 +183,7 @@ export function useConvites() {
         usuario_id: null,
         tipo: 'programacao_cancelada',
         descricao: 'Programação cancelada (convite cancelado)',
+        dados: { convite_id: convite.id },
       });
     }
 
